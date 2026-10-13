@@ -29,3 +29,8 @@ rapier3d = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+# Headless rendering of the editors (`gpui::TestAppContext`, `#[gpui::test]`),
+# the same set-up the UI crate's own tests use. Only test builds see it.
+gpui-ce = { workspace = true, features = ["test-support"] }

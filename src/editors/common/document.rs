@@ -191,11 +191,6 @@ impl<A: Asset> Document<A> {
         cx.notify();
     }
 
-    /// End the current run of mergeable edits (a drag was released).
-    pub fn seal(&mut self) {
-        lock(&self.history).seal();
-    }
-
     pub fn undo(&mut self, cx: &mut Context<Self>) {
         let history = self.history.clone();
         let asset = &mut self.asset;
@@ -287,7 +282,7 @@ mod tests {
         let history: SharedHistory<AssetEdit<PhysicsMaterial>> = Default::default();
         let mut asset = PhysicsMaterial::default();
 
-        let mut push = |asset: &mut PhysicsMaterial, key: Option<&'static str>, value: f32| {
+        let push = |asset: &mut PhysicsMaterial, key: Option<&'static str>, value: f32| {
             let before = asset.clone();
             asset.friction = value;
             lock(&history).push(AssetEdit { other: before, label: "friction", key, at: Instant::now() });

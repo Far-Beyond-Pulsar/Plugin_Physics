@@ -43,7 +43,7 @@ fn as_panel<P: PanelView + 'static>(panel: P) -> Arc<dyn PanelView> {
 }
 
 pub struct MaterialEditor {
-    doc: Entity<Document<PhysicsMaterial>>,
+    pub(crate) doc: Entity<Document<PhysicsMaterial>>,
     workspace: Entity<Workspace>,
     focus_handle: FocusHandle,
 }

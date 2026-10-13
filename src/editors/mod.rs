@@ -75,3 +75,6 @@ mod tests {
         assert_eq!(ids.len(), editors.len(), "editor ids are unique");
     }
 }
+
+#[cfg(test)]
+mod render_tests;

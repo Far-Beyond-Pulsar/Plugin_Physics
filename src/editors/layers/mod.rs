@@ -49,7 +49,7 @@ fn as_panel<P: PanelView + 'static>(panel: P) -> Arc<dyn PanelView> {
 }
 
 pub struct LayersEditor {
-    doc: Entity<Document<CollisionLayers>>,
+    pub(crate) doc: Entity<Document<CollisionLayers>>,
     workspace: Entity<Workspace>,
     focus_handle: FocusHandle,
 }

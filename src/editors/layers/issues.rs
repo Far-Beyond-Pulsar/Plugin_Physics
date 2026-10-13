@@ -69,7 +69,7 @@ impl Render for IssuesPanel {
         let theme = cx.theme().clone();
         let set = self.doc.read(cx).asset().clone();
         let mut issues = set.validate();
-        issues.sort_by(|a, b| b.severity.cmp(&a.severity));
+        issues.sort_by_key(|i| std::cmp::Reverse(i.severity));
         let count = |s: Severity| issues.iter().filter(|i| i.severity == s).count();
         let (errors, warnings, notes) = (count(Severity::Error), count(Severity::Warning), count(Severity::Info));
         let fixable = issues.iter().any(|i| i.fix.is_some());

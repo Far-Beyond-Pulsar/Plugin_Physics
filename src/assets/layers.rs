@@ -138,7 +138,7 @@ impl CollisionLayers {
     /// Whether layer `a`'s list names layer `b`.
     pub fn lists(&self, a: usize, b: usize) -> bool {
         match (self.layers.get(a), self.layers.get(b)) {
-            (Some(la), Some(lb)) => la.collides_with.iter().any(|n| *n == lb.name),
+            (Some(la), Some(lb)) => la.collides_with.contains(&lb.name),
             _ => false,
         }
     }
@@ -156,7 +156,7 @@ impl CollisionLayers {
     fn set_directed(&mut self, a: usize, b: usize, on: bool) {
         let Some(target) = self.layers.get(b).map(|l| l.name.clone()) else { return };
         let Some(layer) = self.layers.get_mut(a) else { return };
-        let present = layer.collides_with.iter().any(|n| *n == target);
+        let present = layer.collides_with.contains(&target);
         match (on, present) {
             (true, false) => layer.collides_with.push(target),
             (false, true) => layer.collides_with.retain(|n| *n != target),

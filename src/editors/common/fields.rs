@@ -28,7 +28,7 @@ pub struct ScalarSpec<A: Asset> {
 // Fields are plain data, so `Clone` doesn't need `A: Clone`'s help.
 impl<A: Asset> std::clone::Clone for ScalarSpec<A> {
     fn clone(&self) -> Self {
-        Self { ..*self }
+        *self
     }
 }
 impl<A: Asset> std::marker::Copy for ScalarSpec<A> {}

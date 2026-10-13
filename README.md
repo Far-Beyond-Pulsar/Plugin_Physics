@@ -10,6 +10,7 @@ as a git submodule at `plugins/vendor/physics_plugin`.
 - [What it provides](#what-it-provides)
 - [Components](#components)
 - [Asset types](#asset-types)
+- [The editors](#the-editors)
 - [Events](#events)
 - [How it works](#how-it-works)
 - [Adding or changing a component](#adding-or-changing-a-component)
@@ -24,6 +25,7 @@ as a git submodule at `plugins/vendor/physics_plugin`.
 |---|---|
 | Components | `RigidBodyComponent`, `ColliderComponent`, `JointComponent`, `CharacterControllerComponent`, `ForceFieldComponent` |
 | Asset types | Physics Material (`.physmat`), Collision Layers (`.physlayers`) |
+| Editors | A Physics Material editor and a Collision Layers editor, one per asset type |
 | Simulation | Rapier 3D on a dedicated `Pulsar-Physics` thread per world |
 | Events | Eleven events in Gamma's `physics` namespace, hookable from scripts |
 | Profiler | `Physics::*` scopes in the editor's flamegraph |
@@ -99,6 +101,61 @@ A region that pushes dynamic bodies: `Directional`, `Radial`, `Vortex` or
 | Collision Layers | `.physlayers` | named layers and their collision matrix |
 
 Both are plain JSON and creatable from the file manager under **physics/**.
+Double-clicking one opens its editor. Files keep any field this version
+doesn't know, so a file written by a newer plugin survives a save here.
+
+The editors add a few optional fields, all ignored by older readers:
+
+| Asset | Field | Meaning |
+|---|---|---|
+| `.physmat` | `surface` | What the material is made of (`concrete`, `wood`, `metal`, `ice`...), for the systems that react to surfaces |
+| `.physmat` | `description` | Free-form notes |
+| `.physlayers` | `layers[].color` | `#rrggbb` swatch for the editor and debug draw |
+| `.physlayers` | `layers[].description` | Free-form notes |
+
+## The editors
+
+Each asset type has its own editor, a docked workspace of panels (drag them
+around, tab them together) over one shared document. Both give you:
+
+- **Undo and redo** (Ctrl+Z / Ctrl+Shift+Z) through the engine's shared undo
+  service, so every view of a file shares one history; consecutive tweaks of one
+  control are a single step.
+- **Save** (Ctrl+S), **Revert**, and an unsaved marker on the tab.
+- **Safe loading**: bad values are repaired and reported in a banner; a file
+  that can't be read at all is left untouched until you choose *Start over*.
+- **Validation** with one-click repairs.
+
+### Physics Material editor (`.physmat`)
+
+| Panel | What it does |
+|---|---|
+| Presets | 19 real-world starting points (concrete, wood, steel, rubber, ice...) with search |
+| Preview | A ball dropped onto the surface (every bounce, rest time) and a block on an incline (when it starts to slide, how fast), against itself or another material |
+| Properties | Friction and restitution (slider + number), how each combines, density with a mass hint, surface type, notes, validation |
+| Interactions | The material against every preset with Rapier's combine rules applied, sortable |
+| Mass | Box and sphere mass, compared with other materials and with water |
+
+The previews are closed-form, so they follow the sliders instantly, and the
+combine rules are Rapier's (the rule with the higher priority wins when the two
+materials ask for different ones).
+
+### Collision Layers editor (`.physlayers`)
+
+| Panel | What it does |
+|---|---|
+| Layers | The list, with each layer's bit; add, duplicate, delete, reorder |
+| Presets | Shooter, platformer, vehicles, top-down RPG and single-layer setups |
+| Matrix | The collision grid; click a cell to flip a pair; one-sided pairs show in amber |
+| Graph | The same relation as a ring of nodes and lines |
+| Inspector | Name, color, notes, what the engine sees of the layer (its bit and 32-bit masks), a "collides with" checklist |
+| Issues | Problems with one-click repairs, including *Fix all* in one undo step |
+| Masks | Every layer's group and mask as the engine reads them; copy as Rust constants |
+
+A pair collides only when **both** layers list each other (Rapier's group
+filter test). A one-sided entry silently does nothing, so the editor reports it
+and offers to make both collide or neither. The engine's masks are 32 bits wide,
+so there are at most 32 layers; a layer's position is its bit.
 
 ## Events
 
@@ -241,8 +298,9 @@ and an idle scene sends nothing to the simulation.
 ## Current limits
 
 - Mesh colliders (convex hull, triangle mesh) are skipped with a warning.
-- `.physmat` materials and `.physlayers` filtering are not applied yet:
-  friction and restitution use Rapier defaults.
+- `.physmat` materials and `.physlayers` filtering are not applied by the
+  simulation yet: friction and restitution use Rapier defaults. The editors
+  author the data, and the Masks panel shows exactly what the engine will read.
 - Object scale and parent transforms are ignored; bodies use the object's
   own `Transform`.
 - `push_dynamic_bodies` on the character controller is not implemented.
@@ -260,6 +318,10 @@ and an idle scene sends nothing to the simulation.
 | `src/physics_events.rs` | The `physics` event namespace |
 | `src/math.rs` | `Transform` to Rapier conversions |
 | `src/file_types.rs` | `.physmat` and `.physlayers` |
+| `src/assets/` | The asset formats as typed models: parsing, validation, repairs, presets and the physics the editors preview. Plain data, fully unit-tested |
+| `src/editors/common/` | The shared document (file, undo history, dirty state), panel chrome, fields and dock layout |
+| `src/editors/material/` | The Physics Material editor's panels |
+| `src/editors/layers/` | The Collision Layers editor's panels |
 
 ## License
 
