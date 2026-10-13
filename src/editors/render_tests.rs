@@ -29,7 +29,12 @@ fn draw(cx: &mut VisualTestContext) {
     for _ in 0..3 {
         cx.run_until_parked();
         cx.update(|window, cx| window.draw(cx).clear());
+        // Let timed UI work finish (a checkbox's toggle animation holds its
+        // state until its timer fires), so nothing is pending when the test
+        // ends.
+        cx.executor().advance_clock(std::time::Duration::from_secs(1));
     }
+    cx.run_until_parked();
 }
 
 #[gpui::test]
@@ -96,7 +101,13 @@ fn the_material_editor_renders_edits_undoes_and_saves(cx: &mut TestAppContext) {
         })
     });
     draw(cx);
-    assert!(doc.read_with(cx, |d, _| d.asset().validate().len()) >= 3);
+    // The edit keeps friction at 0 or more and restitution at 2 or less; what
+    // is left out of range shows its messages.
+    let messages = doc.read_with(cx, |d, _| {
+        d.asset().validate().into_iter().map(|issue| issue.message).collect::<Vec<_>>()
+    });
+    assert!(messages.iter().any(|m| m.contains("adds energy")), "{messages:?}");
+    assert!(messages.iter().any(|m| m.contains("Density must be greater than 0")), "{messages:?}");
     doc.update(cx, |d, cx| d.revert(cx));
     draw(cx);
     assert_eq!(doc.read_with(cx, |d, _| d.asset().density), 2500.0, "revert reloads the file");
