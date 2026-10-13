@@ -73,7 +73,8 @@ impl MaterialEditor {
             center: vec![as_panel(preview)],
             left: Some(Dock::new(270.0, vec![as_panel(presets)])),
             right: Some(Dock::new(350.0, vec![as_panel(properties)])),
-            bottom: Some(Dock::new(250.0, vec![as_panel(interactions), as_panel(mass)])),
+            // Side by side rather than tabbed: both are glanceable references.
+            bottom: Some(Dock::side_by_side(250.0, vec![as_panel(interactions), as_panel(mass)])),
         };
         let workspace = build_workspace("physics-material-workspace", DOCK_CHANNEL, layout, window, cx);
 

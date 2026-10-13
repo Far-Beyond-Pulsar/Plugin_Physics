@@ -34,15 +34,24 @@ macro_rules! dock_panel {
 }
 pub(crate) use dock_panel;
 
-/// One dock: its tabs and its size (width, or height for the bottom dock).
+/// One dock: its panels and its size (width, or height for the bottom dock).
+///
+/// A dock holds one or more groups laid out left to right; each group is its
+/// own set of tabs.
 pub struct Dock {
-    pub panels: Vec<Arc<dyn PanelView>>,
+    pub groups: Vec<Vec<Arc<dyn PanelView>>>,
     pub size: f32,
 }
 
 impl Dock {
+    /// All `panels` as tabs of one group.
     pub fn new(size: f32, panels: Vec<Arc<dyn PanelView>>) -> Self {
-        Self { panels, size }
+        Self { groups: vec![panels], size }
+    }
+
+    /// Each of `panels` in its own group, side by side.
+    pub fn side_by_side(size: f32, panels: Vec<Arc<dyn PanelView>>) -> Self {
+        Self { groups: panels.into_iter().map(|p| vec![p]).collect(), size }
     }
 }
 
@@ -71,9 +80,20 @@ pub fn build_workspace<V: 'static>(
         };
 
         let center = tabs(layout.center, window, cx);
-        let left = layout.left.map(|d| (tabs(d.panels, window, cx), d.size));
-        let right = layout.right.map(|d| (tabs(d.panels, window, cx), d.size));
-        let bottom = layout.bottom.map(|d| (tabs(d.panels, window, cx), d.size));
+        let area_for_split = area_weak.clone();
+        let mut dock_item = |dock: Dock, window: &mut Window, cx: &mut Context<Workspace>| {
+            let size = dock.size;
+            let mut groups: Vec<DockItem> = dock.groups.into_iter().map(|g| tabs(g, window, cx)).collect();
+            let item = if groups.len() == 1 {
+                groups.remove(0)
+            } else {
+                DockItem::split(Axis::Horizontal, groups, &area_for_split, window, cx)
+            };
+            (item, size)
+        };
+        let left = layout.left.map(|d| dock_item(d, window, cx));
+        let right = layout.right.map(|d| dock_item(d, window, cx));
+        let bottom = layout.bottom.map(|d| dock_item(d, window, cx));
 
         workspace.dock_area().update(cx, |area, cx| {
             area.set_center(center, window, cx);

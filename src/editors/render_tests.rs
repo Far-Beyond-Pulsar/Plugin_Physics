@@ -28,7 +28,7 @@ fn temp_file(name: &str, content: &str) -> PathBuf {
 fn draw(cx: &mut VisualTestContext) {
     for _ in 0..3 {
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
     }
 }
 
