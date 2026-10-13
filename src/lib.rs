@@ -1,3 +1,5 @@
+#![recursion_limit = "512"]
+
 //! Physics plugin: physics asset file types, the physics components, and the
 //! Rapier simulation behind them.
 //!
@@ -13,7 +15,9 @@
 
 use plugin_editor_api::*;
 
+pub mod assets;
 mod components;
+mod editors;
 mod file_types;
 mod behavior;
 mod math;
@@ -22,6 +26,7 @@ mod runtime;
 mod sim;
 pub use components::*;
 pub use runtime::{simulated_counts, wait_idle};
+pub use editors::{layers::EDITOR_ID as COLLISION_LAYERS_EDITOR_ID, material::EDITOR_ID as PHYSICS_MATERIAL_EDITOR_ID};
 pub use file_types::{
     COLLISION_LAYERS_EXT, COLLISION_LAYERS_ID, COMBINE_MODES, PHYSICS_MATERIAL_EXT,
     PHYSICS_MATERIAL_ID,
@@ -53,7 +58,7 @@ impl EditorPlugin for PhysicsPlugin {
             name: "Physics".into(),
             version: "0.1.0".into(),
             author: "Pulsar Team".into(),
-            description: "Physics materials and collision layer assets".into(),
+            description: "Physics materials, collision layers and the editors for them".into(),
         }
     }
 
@@ -61,14 +66,37 @@ impl EditorPlugin for PhysicsPlugin {
         file_types::file_types()
     }
 
-    // No dedicated editor yet; assets are plain JSON.
     fn editors(&self) -> Vec<EditorMetadata> {
-        Vec::new()
+        editors::editors()
     }
 }
 
 impl EditorPluginEditor for PhysicsPlugin {
-    fn register_editors(&'static self, _registry: &mut EditorFactoryRegistry) {}
+    fn register_editors(&'static self, registry: &mut EditorFactoryRegistry) {
+        for editor in editors::editors() {
+            let id = editor.id.clone();
+            // A dynamically loaded plugin gets the host's undo service through
+            // the settings snapshot, so every view of a file shares one history.
+            registry.register_fn_with_settings(editor.id, move |path, settings, window, cx| {
+                editors::create_editor(&id, path, Some(&settings.services().undo), window, cx)
+            });
+        }
+    }
+}
+
+impl PhysicsPlugin {
+    /// Open `path` in the editor `editor_id` (for hosts that link this crate).
+    /// `undo` is the host's undo service; with it, every view of a file
+    /// shares one history.
+    pub fn create_editor(
+        editor_id: &EditorId,
+        path: std::path::PathBuf,
+        undo: Option<&UndoService>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Result<std::sync::Arc<dyn PanelView>, PluginError> {
+        editors::create_editor(editor_id, path, undo, window, cx)
+    }
 }
 
 impl EditorPluginStatusbar for PhysicsPlugin {}
