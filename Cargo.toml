@@ -1,0 +1,31 @@
+[package]
+name = "physics_plugin"
+version = "0.1.0"
+edition = "2021"
+description = "Physics asset types and components for the Pulsar editor"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "physics_plugin"
+
+[features]
+# Statically linked hosts use the Rust API and must not emit the
+# process-global dynamic loader symbols shared by every plugin.
+builtin = []
+
+[dependencies]
+gpui-ce = { workspace = true }
+ui = { workspace = true }
+plugin_editor_api = { workspace = true }
+engine_class_derive = { workspace = true }
+# Enum properties get a dropdown editor, which needs the GPUI-typed prims (as helio-component).
+pulsar_reflection = { workspace = true, features = ["prims-gpui"] }
+pulsar_scenedb = { workspace = true }
+pulsar_world_registry = { workspace = true }
+pulsar_events = { workspace = true }
+profiling = { workspace = true }
+inventory = { workspace = true }
+rapier3d = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
