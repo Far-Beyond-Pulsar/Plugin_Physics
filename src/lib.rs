@@ -85,6 +85,15 @@ impl EditorPluginEditor for PhysicsPlugin {
 }
 
 impl PhysicsPlugin {
+    /// The editor that opens `path`, by its extension.
+    pub fn editor_for_path(path: &std::path::Path) -> Option<EditorId> {
+        let extension = path.extension()?.to_str()?;
+        let file_type = file_types::file_types().into_iter().find(|t| t.extension.eq_ignore_ascii_case(extension))?;
+        editors::editors().into_iter().find(|e| e.supported_file_types.contains(&file_type.id)).map(|e| e.id)
+    }
+}
+
+impl PhysicsPlugin {
     /// Open `path` in the editor `editor_id` (for hosts that link this crate).
     /// `undo` is the host's undo service; with it, every view of a file
     /// shares one history.
@@ -148,6 +157,24 @@ mod tests {
                 .unwrap_or_else(|| panic!("no factory for {}", def.id));
             assert!(!make().get_properties().is_empty(), "{} reflects nothing", def.id);
         }
+    }
+
+    #[test]
+    fn each_asset_type_opens_in_its_own_editor() {
+        use std::path::Path;
+        let editors = PhysicsPlugin::default().editors();
+        assert_eq!(editors.len(), 2);
+        assert_eq!(
+            PhysicsPlugin::editor_for_path(Path::new("assets/physics/Rubber.physmat")).unwrap().as_str(),
+            PHYSICS_MATERIAL_EDITOR_ID
+        );
+        assert_eq!(
+            PhysicsPlugin::editor_for_path(Path::new("Layers.PHYSLAYERS")).unwrap().as_str(),
+            COLLISION_LAYERS_EDITOR_ID,
+            "extensions match regardless of case"
+        );
+        assert!(PhysicsPlugin::editor_for_path(Path::new("notes.txt")).is_none());
+        assert!(PhysicsPlugin::editor_for_path(Path::new("no_extension")).is_none());
     }
 
     #[test]
