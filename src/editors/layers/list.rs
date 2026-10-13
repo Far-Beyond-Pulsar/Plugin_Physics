@@ -101,6 +101,7 @@ impl Render for LayersList {
                 let (up_doc, down_doc, dup_doc, del_doc) =
                     (self.doc.clone(), self.doc.clone(), self.doc.clone(), self.doc.clone());
                 let group: SharedString = format!("layer-row-{i}").into();
+                let focus = self.focus_handle.clone();
 
                 h_flex()
                     .id(SharedString::from(format!("layer-{i}")))
@@ -117,7 +118,11 @@ impl Render for LayersList {
                     .when(active, |row| {
                         row.child(div().absolute().left_0().top_0().bottom_0().w(px(3.0)).bg(theme.primary))
                     })
-                    .on_click(move |_, _, cx| select_sel.update(cx, |s, cx| s.select(Some(i), cx)))
+                    .on_click(move |_, window, cx| {
+                        // Focus the list so the arrow keys, Del and Ctrl+D work.
+                        focus.focus(window, cx);
+                        select_sel.update(cx, |s, cx| s.select(Some(i), cx));
+                    })
                     .child(
                         div()
                             .w(px(22.0))
