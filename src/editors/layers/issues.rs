@@ -9,7 +9,9 @@ use ui::{h_flex, v_flex, ActiveTheme, Disableable, IconName, Sizable, StyledExt}
 
 use crate::assets::layers::{CollisionLayers, LayerFix, LayerIssue, MAX_LAYERS};
 use crate::assets::Severity;
-use crate::editors::common::chrome::{all_clear, color_of, empty_message, issue_row, panel_header, swatch, MONO};
+use crate::editors::common::chrome::{
+    all_clear, color_of, empty_message, issue_row, panel_header, swatch, MONO,
+};
 use crate::editors::common::panel::dock_panel;
 
 use super::state::{Doc, Sel};
@@ -22,11 +24,19 @@ pub fn fixes_for(issue: &LayerIssue) -> Vec<(String, LayerFix)> {
         Some(LayerFix::SymmetrizePair { a, b, .. }) => vec![
             (
                 "Make both collide".to_string(),
-                LayerFix::SymmetrizePair { a: a.clone(), b: b.clone(), collide: true },
+                LayerFix::SymmetrizePair {
+                    a: a.clone(),
+                    b: b.clone(),
+                    collide: true,
+                },
             ),
             (
                 "Make neither collide".to_string(),
-                LayerFix::SymmetrizePair { a: a.clone(), b: b.clone(), collide: false },
+                LayerFix::SymmetrizePair {
+                    a: a.clone(),
+                    b: b.clone(),
+                    collide: false,
+                },
             ),
         ],
         Some(fix) => vec![(fix.label(), fix.clone())],
@@ -60,7 +70,11 @@ dock_panel!(IssuesPanel, "physics-layers-issues", "Issues");
 
 impl IssuesPanel {
     pub fn new(doc: Doc, sel: Sel, cx: &mut Context<Self>) -> Self {
-        Self { doc, sel, focus_handle: cx.focus_handle() }
+        Self {
+            doc,
+            sel,
+            focus_handle: cx.focus_handle(),
+        }
     }
 }
 
@@ -71,7 +85,11 @@ impl Render for IssuesPanel {
         let mut issues = set.validate();
         issues.sort_by_key(|i| std::cmp::Reverse(i.severity));
         let count = |s: Severity| issues.iter().filter(|i| i.severity == s).count();
-        let (errors, warnings, notes) = (count(Severity::Error), count(Severity::Warning), count(Severity::Info));
+        let (errors, warnings, notes) = (
+            count(Severity::Error),
+            count(Severity::Warning),
+            count(Severity::Info),
+        );
         let fixable = issues.iter().any(|i| i.fix.is_some());
 
         let doc = self.doc.clone();
@@ -90,7 +108,9 @@ impl Render for IssuesPanel {
                     issue,
                     fixes_for(issue),
                     move |fix, _, cx| {
-                        doc.update(cx, |d, cx| d.edit("Fix layers", None, cx, |set| set.apply_fix(&fix)));
+                        doc.update(cx, |d, cx| {
+                            d.edit("Fix layers", None, cx, |set| set.apply_fix(&fix))
+                        });
                         // Point the other panels at the layer the problem was about.
                         let index = doc.read(cx).asset().index_of(&subject);
                         if index.is_some() {
@@ -104,16 +124,35 @@ impl Render for IssuesPanel {
             .collect();
 
         let body = if rows.is_empty() {
-            div().w_full().p_3().child(all_clear("No problems: every pairing is mutual and every name is unique", cx)).into_any_element()
+            div()
+                .w_full()
+                .p_3()
+                .child(all_clear(
+                    "No problems: every pairing is mutual and every name is unique",
+                    cx,
+                ))
+                .into_any_element()
         } else {
-            v_flex().w_full().p_3().gap_1p5().children(rows).into_any_element()
+            v_flex()
+                .w_full()
+                .p_3()
+                .gap_1p5()
+                .children(rows)
+                .into_any_element()
         };
 
         let tags = h_flex()
             .gap_1()
-            .child(Tag::secondary().small().child(format!("{} / {MAX_LAYERS} layers", set.len())))
+            .child(
+                Tag::secondary()
+                    .small()
+                    .child(format!("{} / {MAX_LAYERS} layers", set.len())),
+            )
             .children((errors > 0).then(|| Tag::danger().small().child(format!("{errors} errors"))))
-            .children((warnings > 0).then(|| Tag::warning().small().child(format!("{warnings} warnings"))))
+            .children(
+                (warnings > 0)
+                    .then(|| Tag::warning().small().child(format!("{warnings} warnings"))),
+            )
             .children((notes > 0).then(|| Tag::info().small().child(format!("{notes} notes"))));
 
         v_flex()
@@ -134,14 +173,23 @@ impl Render for IssuesPanel {
                                 .disabled(!fixable)
                                 .tooltip("Apply every suggested repair")
                                 .on_click(move |_, _, cx| {
-                                    fix_all_doc.update(cx, |d, cx| d.edit("Fix all layer issues", None, cx, fix_all))
+                                    fix_all_doc.update(cx, |d, cx| {
+                                        d.edit("Fix all layer issues", None, cx, fix_all)
+                                    })
                                 }),
                         )
                         .into_any_element(),
                 ),
                 cx,
             ))
-            .child(v_flex().id("layer-issues-scroll").flex_1().min_h_0().scrollable(ScrollbarAxis::Vertical).child(body))
+            .child(
+                v_flex()
+                    .id("layer-issues-scroll")
+                    .flex_1()
+                    .min_h_0()
+                    .scrollable(ScrollbarAxis::Vertical)
+                    .child(body),
+            )
     }
 }
 
@@ -156,7 +204,10 @@ dock_panel!(MasksPanel, "physics-layers-masks", "Masks");
 
 impl MasksPanel {
     pub fn new(doc: Doc, cx: &mut Context<Self>) -> Self {
-        Self { doc, focus_handle: cx.focus_handle() }
+        Self {
+            doc,
+            focus_handle: cx.focus_handle(),
+        }
     }
 }
 
@@ -168,7 +219,12 @@ impl Render for MasksPanel {
 
         let (rust, table) = (set.to_rust_consts(), set.masks_table());
         let header = |label: &'static str, width: f32| {
-            div().w(px(width)).text_size(px(10.5)).font_semibold().text_color(theme.muted_foreground).child(label)
+            div()
+                .w(px(width))
+                .text_size(px(10.5))
+                .font_semibold()
+                .text_color(theme.muted_foreground)
+                .child(label)
         };
 
         let rows = (0..n).map(|i| {
@@ -177,7 +233,11 @@ impl Render for MasksPanel {
                     .w(px(8.0))
                     .h(px(14.0))
                     .rounded(px(2.0))
-                    .bg(if set.collides(i, j) { color_of(set.color_of(j)) } else { theme.foreground.opacity(0.07) })
+                    .bg(if set.collides(i, j) {
+                        color_of(set.color_of(j))
+                    } else {
+                        theme.foreground.opacity(0.07)
+                    })
             });
             h_flex()
                 .w_full()
@@ -186,17 +246,44 @@ impl Render for MasksPanel {
                 .gap_2()
                 .items_center()
                 .hover(|s| s.bg(theme.list_hover))
-                .child(div().w(px(30.0)).text_xs().font_family(MONO).text_color(theme.muted_foreground).child(format!("{i}")))
+                .child(
+                    div()
+                        .w(px(30.0))
+                        .text_xs()
+                        .font_family(MONO)
+                        .text_color(theme.muted_foreground)
+                        .child(format!("{i}")),
+                )
                 .child(
                     h_flex()
                         .w(px(170.0))
                         .gap_2()
                         .items_center()
                         .child(swatch(color_of(set.color_of(i)), 12.0, cx))
-                        .child(div().text_sm().text_color(theme.foreground).truncate().child(set.layers[i].name.clone())),
+                        .child(
+                            div()
+                                .text_sm()
+                                .text_color(theme.foreground)
+                                .truncate()
+                                .child(set.layers[i].name.clone()),
+                        ),
                 )
-                .child(div().w(px(96.0)).text_xs().font_family(MONO).text_color(theme.foreground.opacity(0.9)).child(format!("0x{:08X}", set.membership_bit(i))))
-                .child(div().w(px(96.0)).text_xs().font_family(MONO).text_color(theme.foreground.opacity(0.9)).child(format!("0x{:08X}", set.filter_mask(i))))
+                .child(
+                    div()
+                        .w(px(96.0))
+                        .text_xs()
+                        .font_family(MONO)
+                        .text_color(theme.foreground.opacity(0.9))
+                        .child(format!("0x{:08X}", set.membership_bit(i))),
+                )
+                .child(
+                    div()
+                        .w(px(96.0))
+                        .text_xs()
+                        .font_family(MONO)
+                        .text_color(theme.foreground.opacity(0.9))
+                        .child(format!("0x{:08X}", set.filter_mask(i))),
+                )
                 .child(h_flex().gap(px(2.0)).children(strip))
         });
 
@@ -215,21 +302,34 @@ impl Render for MasksPanel {
                                 .ghost()
                                 .small()
                                 .tooltip("Copy a LAYER_/MASK_ constant for every layer")
-                                .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(rust.clone()))),
+                                .on_click(move |_, _, cx| {
+                                    cx.write_to_clipboard(ClipboardItem::new_string(rust.clone()))
+                                }),
                         )
                         .child(
                             Button::new("masks-copy-table")
                                 .label("Copy table")
                                 .ghost()
                                 .small()
-                                .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(table.clone()))),
+                                .on_click(move |_, _, cx| {
+                                    cx.write_to_clipboard(ClipboardItem::new_string(table.clone()))
+                                }),
                         )
                         .into_any_element(),
                 ),
                 cx,
             ))
             .child(if n == 0 {
-                div().flex_1().min_h_0().child(empty_message(IconName::Table, "No layers", "Add layers to see their masks", cx)).into_any_element()
+                div()
+                    .flex_1()
+                    .min_h_0()
+                    .child(empty_message(
+                        IconName::Table,
+                        "No layers",
+                        "Add layers to see their masks",
+                        cx,
+                    ))
+                    .into_any_element()
             } else {
                 v_flex()
                     .flex_1()
@@ -249,7 +349,15 @@ impl Render for MasksPanel {
                             .child(header("COLLIDES WITH", 96.0))
                             .child(header("PARTNERS", 120.0)),
                     )
-                    .child(v_flex().id("masks-scroll").flex_1().min_h_0().scrollable(ScrollbarAxis::Vertical).py_1().children(rows))
+                    .child(
+                        v_flex()
+                            .id("masks-scroll")
+                            .flex_1()
+                            .min_h_0()
+                            .scrollable(ScrollbarAxis::Vertical)
+                            .py_1()
+                            .children(rows),
+                    )
                     .into_any_element()
             })
     }
@@ -267,15 +375,28 @@ mod tests {
         set.add(Some("A"));
         set.collide_none();
         set.layers[1].collides_with.push("Default".into());
-        let issue = set.validate().into_iter().find(|i| i.message.contains("doesn't list it back")).unwrap();
+        let issue = set
+            .validate()
+            .into_iter()
+            .find(|i| i.message.contains("doesn't list it back"))
+            .unwrap();
         let fixes = fixes_for(&issue);
         assert_eq!(fixes.len(), 2);
-        assert!(matches!(&fixes[0].1, LayerFix::SymmetrizePair { collide: true, .. }));
-        assert!(matches!(&fixes[1].1, LayerFix::SymmetrizePair { collide: false, .. }));
+        assert!(matches!(
+            &fixes[0].1,
+            LayerFix::SymmetrizePair { collide: true, .. }
+        ));
+        assert!(matches!(
+            &fixes[1].1,
+            LayerFix::SymmetrizePair { collide: false, .. }
+        ));
         for (_, fix) in fixes {
             let mut copy = set.clone();
             copy.apply_fix(&fix);
-            assert!(copy.validate().iter().all(|i| !i.message.contains("doesn't list it back")));
+            assert!(copy
+                .validate()
+                .iter()
+                .all(|i| !i.message.contains("doesn't list it back")));
         }
     }
 
@@ -288,7 +409,11 @@ mod tests {
         let (mut set, _) = <CollisionLayers as crate::assets::Asset>::parse(text).unwrap();
         assert!(set.validate().iter().any(|i| i.severity == Severity::Error));
         fix_all(&mut set);
-        assert!(set.validate().iter().all(|i| i.severity == Severity::Info), "{:?}", set.validate());
+        assert!(
+            set.validate().iter().all(|i| i.severity == Severity::Info),
+            "{:?}",
+            set.validate()
+        );
         // Presets need no fixing at all.
         let mut preset = PRESETS[1].build();
         let before = preset.clone();

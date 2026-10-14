@@ -52,7 +52,13 @@ pub fn fill_polygon(window: &mut Window, points: &[Point<Pixels>], color: Hsla) 
     }
 }
 
-pub fn dashed_line(window: &mut Window, a: Point<Pixels>, b: Point<Pixels>, width: f32, color: Hsla) {
+pub fn dashed_line(
+    window: &mut Window,
+    a: Point<Pixels>,
+    b: Point<Pixels>,
+    width: f32,
+    color: Hsla,
+) {
     let mut builder = PathBuilder::stroke(px(width)).dash_array(&[px(5.0), px(4.0)]);
     builder.move_to(a);
     builder.line_to(b);
@@ -84,9 +90,18 @@ pub fn arrow(window: &mut Window, from: (f32, f32), to: (f32, f32), width: f32, 
     }
     let (ux, uy) = (dx / len, dy / len);
     let head = (len * 0.35).clamp(5.0, 9.0);
-    let left = (to.0 - head * (ux * 0.866 - uy * 0.5), to.1 - head * (uy * 0.866 + ux * 0.5));
-    let right = (to.0 - head * (ux * 0.866 + uy * 0.5), to.1 - head * (uy * 0.866 - ux * 0.5));
+    let left = (
+        to.0 - head * (ux * 0.866 - uy * 0.5),
+        to.1 - head * (uy * 0.866 + ux * 0.5),
+    );
+    let right = (
+        to.0 - head * (ux * 0.866 + uy * 0.5),
+        to.1 - head * (uy * 0.866 - ux * 0.5),
+    );
     stroke_polyline(window, &[pt(from.0, from.1), pt(to.0, to.1)], width, color);
-    fill_polygon(window, &[pt(to.0, to.1), pt(left.0, left.1), pt(right.0, right.1)], color);
+    fill_polygon(
+        window,
+        &[pt(to.0, to.1), pt(left.0, left.1), pt(right.0, right.1)],
+        color,
+    );
 }
-

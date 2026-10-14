@@ -51,9 +51,24 @@ dock_panel!(PreviewPanel, "physics-material-preview", "Preview");
 
 impl PreviewPanel {
     pub fn new(doc: Doc, _window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let drop_height = cx.new(|_| SliderState::new().min(0.0).max(5.0).step(0.05).default_value(2.0));
-        let angle = cx.new(|_| SliderState::new().min(0.0).max(70.0).step(0.5).default_value(25.0));
-        let redraw = |_this: &mut Self, _s: Entity<SliderState>, _e: &SliderEvent, cx: &mut Context<Self>| cx.notify();
+        let drop_height = cx.new(|_| {
+            SliderState::new()
+                .min(0.0)
+                .max(5.0)
+                .step(0.05)
+                .default_value(2.0)
+        });
+        let angle = cx.new(|_| {
+            SliderState::new()
+                .min(0.0)
+                .max(70.0)
+                .step(0.5)
+                .default_value(25.0)
+        });
+        let redraw = |_this: &mut Self,
+                      _s: Entity<SliderState>,
+                      _e: &SliderEvent,
+                      cx: &mut Context<Self>| cx.notify();
         let subscriptions = vec![
             cx.subscribe(&drop_height, redraw),
             cx.subscribe(&angle, redraw),
@@ -119,9 +134,21 @@ impl PreviewPanel {
             .border_1()
             .border_color(t.border.opacity(0.7))
             .child(
-                v_flex().gap_0p5().child(div().text_sm().font_semibold().text_color(t.foreground).child(title)).child(
-                    div().text_xs().text_color(t.muted_foreground).child(subtitle),
-                ),
+                v_flex()
+                    .gap_0p5()
+                    .child(
+                        div()
+                            .text_sm()
+                            .font_semibold()
+                            .text_color(t.foreground)
+                            .child(title),
+                    )
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(t.muted_foreground)
+                            .child(subtitle),
+                    ),
             )
     }
 
@@ -143,33 +170,57 @@ impl PreviewPanel {
         }
         .max(0.5);
 
-        let plot = BouncePlot { arcs, gravity: GRAVITY, drop_height: height, duration, colors: Self::colors(cx) };
+        let plot = BouncePlot {
+            arcs,
+            gravity: GRAVITY,
+            drop_height: height,
+            duration,
+            colors: Self::colors(cx),
+        };
 
         let mono = |text: String, theme: &ui::Theme| {
-            div().text_xs().font_family(MONO).text_color(theme.foreground.opacity(0.9)).child(text)
+            div()
+                .text_xs()
+                .font_family(MONO)
+                .text_color(theme.foreground.opacity(0.9))
+                .child(text)
         };
 
         Self::card("Bounce", "A ball dropped onto the surface", cx)
-            .child(h_flex().gap_1().items_center().child(caption("Against", cx)).child(self.against_picker(
-                "bounce-against",
-                self.bounce_against,
-                |this, i| this.bounce_against = i,
-                cx,
-            )))
+            .child(
+                h_flex()
+                    .gap_1()
+                    .items_center()
+                    .child(caption("Against", cx))
+                    .child(self.against_picker(
+                        "bounce-against",
+                        self.bounce_against,
+                        |this, i| this.bounce_against = i,
+                        cx,
+                    )),
+            )
             .child(
                 h_flex()
                     .gap_2()
                     .items_center()
                     .child(caption("Drop height", cx))
                     .child(div().flex_1().child(Slider::new(&self.drop_height)))
-                    .child(div().w(px(52.0)).child(mono(format!("{height:.2} m"), &theme))),
+                    .child(
+                        div()
+                            .w(px(52.0))
+                            .child(mono(format!("{height:.2} m"), &theme)),
+                    ),
             )
             .child(
                 h_flex()
                     .gap_2()
                     .items_center()
                     .flex_wrap()
-                    .child(Tag::info().small().child(format!("e = {e:.2} ({})", contact.restitution_rule.label())))
+                    .child(
+                        Tag::info()
+                            .small()
+                            .child(format!("e = {e:.2} ({})", contact.restitution_rule.label())),
+                    )
                     .child(mono(
                         match bounces {
                             0 => "does not bounce".to_string(),
@@ -180,7 +231,9 @@ impl PreviewPanel {
                     ))
                     .children(first.map(|peak| mono(format!("first rebound {peak:.2} m"), &theme)))
                     .child(mono(
-                        settle.map_or("never settles".to_string(), |t| format!("rests after {t:.1} s")),
+                        settle.map_or("never settles".to_string(), |t| {
+                            format!("rests after {t:.1} s")
+                        }),
                         &theme,
                     )),
             )
@@ -196,9 +249,24 @@ impl PreviewPanel {
                         )
                         .size_full(),
                     )
-                    .child(axis_label(format!("{height:.1} m"), 4.0, PLOT_TOP - 7.0, &theme))
-                    .child(axis_label(format!("{:.1} m", height * 0.5), 4.0, 190.0 * 0.5 - 6.0, &theme))
-                    .child(axis_label("0".to_string(), 24.0, 190.0 - PLOT_BOTTOM - 7.0, &theme))
+                    .child(axis_label(
+                        format!("{height:.1} m"),
+                        4.0,
+                        PLOT_TOP - 7.0,
+                        &theme,
+                    ))
+                    .child(axis_label(
+                        format!("{:.1} m", height * 0.5),
+                        4.0,
+                        190.0 * 0.5 - 6.0,
+                        &theme,
+                    ))
+                    .child(axis_label(
+                        "0".to_string(),
+                        24.0,
+                        190.0 - PLOT_BOTTOM - 7.0,
+                        &theme,
+                    ))
                     .child(
                         div()
                             .absolute()
@@ -218,31 +286,55 @@ impl PreviewPanel {
         let contact = own.contact_with(&other);
         let angle = self.angle.read(cx).value().end();
         let state = slope_state(contact.friction, angle, GRAVITY);
-        let plot = SlopePlot { state, colors: Self::colors(cx) };
+        let plot = SlopePlot {
+            state,
+            colors: Self::colors(cx),
+        };
 
         let mono = |text: String, theme: &ui::Theme| {
-            div().text_xs().font_family(MONO).text_color(theme.foreground.opacity(0.9)).child(text)
+            div()
+                .text_xs()
+                .font_family(MONO)
+                .text_color(theme.foreground.opacity(0.9))
+                .child(text)
         };
         let legend = |label: &'static str, color: Hsla, theme: &ui::Theme| {
-            h_flex().gap_1().items_center().child(div().w(px(10.0)).h(px(3.0)).rounded(px(2.0)).bg(color)).child(
-                div().text_size(px(10.5)).text_color(theme.muted_foreground).child(label),
-            )
+            h_flex()
+                .gap_1()
+                .items_center()
+                .child(div().w(px(10.0)).h(px(3.0)).rounded(px(2.0)).bg(color))
+                .child(
+                    div()
+                        .text_size(px(10.5))
+                        .text_color(theme.muted_foreground)
+                        .child(label),
+                )
         };
 
         Self::card("Slope", "A block resting on an incline", cx)
-            .child(h_flex().gap_1().items_center().child(caption("Against", cx)).child(self.against_picker(
-                "slope-against",
-                self.slope_against,
-                |this, i| this.slope_against = i,
-                cx,
-            )))
+            .child(
+                h_flex()
+                    .gap_1()
+                    .items_center()
+                    .child(caption("Against", cx))
+                    .child(self.against_picker(
+                        "slope-against",
+                        self.slope_against,
+                        |this, i| this.slope_against = i,
+                        cx,
+                    )),
+            )
             .child(
                 h_flex()
                     .gap_2()
                     .items_center()
                     .child(caption("Angle", cx))
                     .child(div().flex_1().child(Slider::new(&self.angle)))
-                    .child(div().w(px(52.0)).child(mono(format!("{angle:.1}°"), &theme))),
+                    .child(
+                        div()
+                            .w(px(52.0))
+                            .child(mono(format!("{angle:.1}°"), &theme)),
+                    ),
             )
             .child(
                 h_flex()
@@ -254,11 +346,25 @@ impl PreviewPanel {
                     } else {
                         Tag::success().small().child("Holds").into_any_element()
                     })
-                    .child(mono(format!("μ = {:.2} ({})", contact.friction, contact.friction_rule.label()), &theme))
-                    .child(mono(format!("holds up to {:.1}°", state.critical_deg), &theme))
+                    .child(mono(
+                        format!(
+                            "μ = {:.2} ({})",
+                            contact.friction,
+                            contact.friction_rule.label()
+                        ),
+                        &theme,
+                    ))
+                    .child(mono(
+                        format!("holds up to {:.1}°", state.critical_deg),
+                        &theme,
+                    ))
                     .children(state.slipping.then(|| {
                         mono(
-                            format!("a = {:.2} m/s², {:.1} m in 2 s", state.acceleration, slide_distance(&state, 2.0)),
+                            format!(
+                                "a = {:.2} m/s², {:.1} m in 2 s",
+                                state.acceleration,
+                                slide_distance(&state, 2.0)
+                            ),
                             &theme,
                         )
                     })),

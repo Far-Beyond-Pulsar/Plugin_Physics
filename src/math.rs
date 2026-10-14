@@ -56,7 +56,12 @@ mod tests {
 
     #[test]
     fn euler_round_trips() {
-        for r in [[0.0, 0.0, 0.0], [10.0, 20.0, 30.0], [-45.0, 170.0, 5.0], [80.0, -90.0, 0.0]] {
+        for r in [
+            [0.0, 0.0, 0.0],
+            [10.0, 20.0, 30.0],
+            [-45.0, 170.0, 5.0],
+            [80.0, -90.0, 0.0],
+        ] {
             let back = euler_degrees_from_quat(quat_from_euler_degrees(r));
             let again = quat_from_euler_degrees(back);
             let q = quat_from_euler_degrees(r);

@@ -52,7 +52,11 @@ impl Default for CollisionLayers {
     fn default() -> Self {
         let mut default = Layer::new("Default");
         default.collides_with.push("Default".to_string());
-        Self { version: SCHEMA_VERSION, layers: vec![default], extra: Map::new() }
+        Self {
+            version: SCHEMA_VERSION,
+            layers: vec![default],
+            extra: Map::new(),
+        }
     }
 }
 
@@ -154,8 +158,12 @@ impl CollisionLayers {
     }
 
     fn set_directed(&mut self, a: usize, b: usize, on: bool) {
-        let Some(target) = self.layers.get(b).map(|l| l.name.clone()) else { return };
-        let Some(layer) = self.layers.get_mut(a) else { return };
+        let Some(target) = self.layers.get(b).map(|l| l.name.clone()) else {
+            return;
+        };
+        let Some(layer) = self.layers.get_mut(a) else {
+            return;
+        };
         let present = layer.collides_with.contains(&target);
         match (on, present) {
             (true, false) => layer.collides_with.push(target),
@@ -217,7 +225,11 @@ impl CollisionLayers {
 
     /// `base`, or `base 2`, `base 3`… whichever isn't taken.
     pub fn unique_name(&self, base: &str) -> String {
-        let base = if base.trim().is_empty() { "Layer" } else { base.trim() };
+        let base = if base.trim().is_empty() {
+            "Layer"
+        } else {
+            base.trim()
+        };
         if self.index_of(base).is_none() {
             return base.to_string();
         }
@@ -248,7 +260,9 @@ impl CollisionLayers {
         if new_name.is_empty() {
             return Err(RenameError::Empty);
         }
-        let Some(old) = self.layers.get(i).map(|l| l.name.clone()) else { return Ok(()) };
+        let Some(old) = self.layers.get(i).map(|l| l.name.clone()) else {
+            return Ok(());
+        };
         if old == new_name {
             return Ok(());
         }
@@ -321,7 +335,9 @@ impl CollisionLayers {
 
     /// Number of layers `i` actually collides with (itself included).
     pub fn collision_count(&self, i: usize) -> usize {
-        (0..self.layers.len()).filter(|&j| self.collides(i, j)).count()
+        (0..self.layers.len())
+            .filter(|&j| self.collides(i, j))
+            .count()
     }
 
     /// The group bit of layer `i`.
@@ -380,21 +396,34 @@ impl CollisionLayers {
             })
             .collect();
 
-        let mut out = String::from("// Collision layers: a layer's bit is its position in the list.\n");
+        let mut out =
+            String::from("// Collision layers: a layer's bit is its position in the list.\n");
         for (i, name) in names.iter().enumerate().take(MAX_LAYERS) {
             out.push_str(&format!("pub const LAYER_{name}: u32 = 1 << {i};\n"));
         }
         out.push_str("\n// What each layer collides with.\n");
         for (i, name) in names.iter().enumerate().take(MAX_LAYERS) {
-            out.push_str(&format!("pub const MASK_{name}: u32 = 0x{:08X};\n", self.filter_mask(i)));
+            out.push_str(&format!(
+                "pub const MASK_{name}: u32 = 0x{:08X};\n",
+                self.filter_mask(i)
+            ));
         }
         out
     }
 
     /// The layers, their bits and masks as an aligned text table.
     pub fn masks_table(&self) -> String {
-        let width = self.layers.iter().map(|l| l.name.chars().count()).max().unwrap_or(5).max(5);
-        let mut out = format!("{:<4} {:<width$}  {:<10}  {}\n", "Bit", "Layer", "Group", "Collides with");
+        let width = self
+            .layers
+            .iter()
+            .map(|l| l.name.chars().count())
+            .max()
+            .unwrap_or(5)
+            .max(5);
+        let mut out = format!(
+            "{:<4} {:<width$}  {:<10}  {}\n",
+            "Bit", "Layer", "Group", "Collides with"
+        );
         for (i, layer) in self.layers.iter().enumerate().take(MAX_LAYERS) {
             out.push_str(&format!(
                 "{:<4} {:<width$}  0x{:08X}  0x{:08X}\n",
@@ -434,14 +463,21 @@ impl CollisionLayers {
         }
 
         for (i, layer) in self.layers.iter().enumerate() {
-            let subject = if layer.name.is_empty() { format!("layer {}", i + 1) } else { layer.name.clone() };
+            let subject = if layer.name.is_empty() {
+                format!("layer {}", i + 1)
+            } else {
+                layer.name.clone()
+            };
 
             if layer.name.trim().is_empty() {
                 out.push(
                     Issue::new(Severity::Error, subject.clone(), "A layer has no name")
                         .with_fix(LayerFix::Rename { index: i }),
                 );
-            } else if self.layers[..i].iter().any(|l| l.name.eq_ignore_ascii_case(&layer.name)) {
+            } else if self.layers[..i]
+                .iter()
+                .any(|l| l.name.eq_ignore_ascii_case(&layer.name))
+            {
                 out.push(
                     Issue::new(
                         Severity::Error,
@@ -476,8 +512,14 @@ impl CollisionLayers {
             }
             if repeated {
                 out.push(
-                    Issue::new(Severity::Info, subject.clone(), "Lists the same layer more than once")
-                        .with_fix(LayerFix::Deduplicate { layer: layer.name.clone() }),
+                    Issue::new(
+                        Severity::Info,
+                        subject.clone(),
+                        "Lists the same layer more than once",
+                    )
+                    .with_fix(LayerFix::Deduplicate {
+                        layer: layer.name.clone(),
+                    }),
                 );
             }
 
@@ -511,8 +553,12 @@ impl CollisionLayers {
 
         if self.index_of("Default").is_none() {
             out.push(
-                Issue::new(Severity::Warning, "Default", "No \"Default\" layer: objects without a layer have nowhere to go")
-                    .with_fix(LayerFix::AddDefaultLayer),
+                Issue::new(
+                    Severity::Warning,
+                    "Default",
+                    "No \"Default\" layer: objects without a layer have nowhere to go",
+                )
+                .with_fix(LayerFix::AddDefaultLayer),
             );
         }
         out
@@ -580,7 +626,8 @@ impl Asset for CollisionLayers {
         if text.trim().is_empty() {
             return Ok((Self::default(), Vec::new()));
         }
-        let value: Value = serde_json::from_str(text).map_err(|e| format!("not valid JSON: {e}"))?;
+        let value: Value =
+            serde_json::from_str(text).map_err(|e| format!("not valid JSON: {e}"))?;
         let Value::Object(map) = value else {
             return Err("expected a JSON object".to_string());
         };
@@ -623,7 +670,10 @@ impl Asset for CollisionLayers {
                     layers.push(Layer {
                         name,
                         collides_with,
-                        color: entry.get("color").and_then(Value::as_str).map(str::to_string),
+                        color: entry
+                            .get("color")
+                            .and_then(Value::as_str)
+                            .map(str::to_string),
                         description: entry
                             .get("description")
                             .and_then(Value::as_str)
@@ -631,7 +681,10 @@ impl Asset for CollisionLayers {
                             .to_string(),
                         extra: entry
                             .iter()
-                            .filter(|(k, _)| !["name", "collides_with", "color", "description"].contains(&k.as_str()))
+                            .filter(|(k, _)| {
+                                !["name", "collides_with", "color", "description"]
+                                    .contains(&k.as_str())
+                            })
                             .map(|(k, v)| (k.clone(), v.clone()))
                             .collect(),
                     });
@@ -644,7 +697,10 @@ impl Asset for CollisionLayers {
         }
 
         let parsed = Self {
-            version: map.get("version").and_then(Value::as_u64).map_or(SCHEMA_VERSION, |v| v as u32),
+            version: map
+                .get("version")
+                .and_then(Value::as_u64)
+                .map_or(SCHEMA_VERSION, |v| v as u32),
             layers,
             extra: map
                 .iter()
@@ -700,14 +756,20 @@ pub struct LayerPreset {
 
 impl LayerPreset {
     pub fn build(&self) -> CollisionLayers {
-        let mut set = CollisionLayers { version: SCHEMA_VERSION, layers: Vec::new(), extra: Map::new() };
+        let mut set = CollisionLayers {
+            version: SCHEMA_VERSION,
+            layers: Vec::new(),
+            extra: Map::new(),
+        };
         for (i, (name, _)) in self.rows.iter().enumerate() {
             let mut layer = Layer::new(*name);
             layer.color = Some(hex_color(auto_color(i)));
             set.layers.push(layer);
         }
         for (name, partners) in self.rows {
-            let Some(a) = set.index_of(name) else { continue };
+            let Some(a) = set.index_of(name) else {
+                continue;
+            };
             for partner in *partners {
                 if let Some(b) = set.index_of(partner) {
                     set.set_pair(a, b, true);
@@ -817,7 +879,11 @@ mod tests {
         assert_ne!(set.layers[a].name, set.layers[b].name);
         assert_eq!(set.layers[b].name, "Props 2");
         for i in 0..set.len() {
-            assert_eq!(set.collision_count(i), set.len(), "layer {i} should meet everything");
+            assert_eq!(
+                set.collision_count(i),
+                set.len(),
+                "layer {i} should meet everything"
+            );
         }
     }
 
@@ -830,7 +896,10 @@ mod tests {
         assert!(set.duplicate(0).is_none());
         assert!(set.validate().iter().all(|i| i.severity != Severity::Error));
         set.layers.push(Layer::new("Overflow"));
-        assert!(set.validate().iter().any(|i| i.fix == Some(LayerFix::TrimToLimit)));
+        assert!(set
+            .validate()
+            .iter()
+            .any(|i| i.fix == Some(LayerFix::TrimToLimit)));
         set.apply_fix(&LayerFix::TrimToLimit);
         assert_eq!(set.len(), MAX_LAYERS);
     }
@@ -840,8 +909,15 @@ mod tests {
         let mut set = three();
         set.set_pair(1, 2, true);
         assert_eq!(set.rename(1, "Hero"), Ok(()));
-        assert!(set.collides(set.index_of("Hero").unwrap(), set.index_of("Enemy").unwrap()));
-        assert_eq!(set.rename(2, "hero"), Err(RenameError::Duplicate), "names clash ignoring case");
+        assert!(set.collides(
+            set.index_of("Hero").unwrap(),
+            set.index_of("Enemy").unwrap()
+        ));
+        assert_eq!(
+            set.rename(2, "hero"),
+            Err(RenameError::Duplicate),
+            "names clash ignoring case"
+        );
         assert_eq!(set.rename(2, "   "), Err(RenameError::Empty));
         assert_eq!(set.rename(2, "Enemy"), Ok(()), "renaming to itself is fine");
     }
@@ -852,8 +928,14 @@ mod tests {
         set.set_pair(0, 2, true);
         set.remove(2);
         assert_eq!(set.len(), 2);
-        assert!(set.layers.iter().all(|l| !l.collides_with.iter().any(|n| n == "Enemy")));
-        assert!(set.validate().iter().all(|i| !i.message.contains("doesn't exist")));
+        assert!(set
+            .layers
+            .iter()
+            .all(|l| !l.collides_with.iter().any(|n| n == "Enemy")));
+        assert!(set
+            .validate()
+            .iter()
+            .all(|i| !i.message.contains("doesn't exist")));
     }
 
     #[test]
@@ -865,10 +947,19 @@ mod tests {
         assert_eq!(copy, 2);
         assert_eq!(set.layers[copy].name, "Player Copy");
         let enemy = set.index_of("Enemy").unwrap();
-        assert!(set.collides(copy, enemy), "the copy meets what the original meets");
+        assert!(
+            set.collides(copy, enemy),
+            "the copy meets what the original meets"
+        );
         assert!(set.collides(copy, copy));
         assert!(set.collides(copy, 1), "and the original");
-        assert!(set.validate().iter().all(|i| i.severity != Severity::Warning), "{:?}", set.validate());
+        assert!(
+            set.validate()
+                .iter()
+                .all(|i| i.severity != Severity::Warning),
+            "{:?}",
+            set.validate()
+        );
     }
 
     #[test]
@@ -877,7 +968,10 @@ mod tests {
         set.set_pair(1, 2, true);
         set.move_layer(2, 0);
         assert_eq!(set.layers[0].name, "Enemy");
-        let (p, e) = (set.index_of("Player").unwrap(), set.index_of("Enemy").unwrap());
+        let (p, e) = (
+            set.index_of("Player").unwrap(),
+            set.index_of("Enemy").unwrap(),
+        );
         assert!(set.collides(p, e));
         assert_eq!(set.membership_bit(e), 1);
         assert_eq!(set.filter_mask(e), 1 << p);
@@ -903,7 +997,10 @@ mod tests {
         set.apply_row(1, RowOp::Invert);
         assert_eq!(set.collision_count(1), 0);
         set.apply_row(1, RowOp::CollideWithNone);
-        assert!(set.validate().iter().all(|i| i.severity != Severity::Warning));
+        assert!(set
+            .validate()
+            .iter()
+            .all(|i| i.severity != Severity::Warning));
     }
 
     #[test]
@@ -911,7 +1008,10 @@ mod tests {
         let mut set = three();
         set.set_directed(1, 2, true);
         let issues = set.validate();
-        let issue = issues.iter().find(|i| i.message.contains("doesn't list it back")).unwrap();
+        let issue = issues
+            .iter()
+            .find(|i| i.message.contains("doesn't list it back"))
+            .unwrap();
         assert_eq!(issue.severity, Severity::Warning);
 
         let mut union = set.clone();
@@ -922,7 +1022,10 @@ mod tests {
         assert!(!inter.lists(1, 2));
 
         set.apply_fix(issue.fix.as_ref().unwrap());
-        assert!(set.validate().iter().all(|i| !i.message.contains("doesn't list it back")));
+        assert!(set
+            .validate()
+            .iter()
+            .all(|i| !i.message.contains("doesn't list it back")));
     }
 
     #[test]
@@ -945,14 +1048,26 @@ mod tests {
                 }
             }
         }
-        let left: Vec<_> = set.validate().into_iter().filter(|i| i.severity != Severity::Info).collect();
+        let left: Vec<_> = set
+            .validate()
+            .into_iter()
+            .filter(|i| i.severity != Severity::Info)
+            .collect();
         assert!(left.is_empty(), "{left:?}");
     }
 
     #[test]
     fn a_missing_default_layer_can_be_added() {
-        let mut set = CollisionLayers { version: 1, layers: vec![Layer::new("Only")], extra: Map::new() };
-        let issue = set.validate().into_iter().find(|i| i.fix == Some(LayerFix::AddDefaultLayer)).unwrap();
+        let mut set = CollisionLayers {
+            version: 1,
+            layers: vec![Layer::new("Only")],
+            extra: Map::new(),
+        };
+        let issue = set
+            .validate()
+            .into_iter()
+            .find(|i| i.fix == Some(LayerFix::AddDefaultLayer))
+            .unwrap();
         set.apply_fix(issue.fix.as_ref().unwrap());
         assert!(set.index_of("Default").is_some());
     }
@@ -982,7 +1097,10 @@ mod tests {
         assert_eq!(saved["layers"][0]["color"], "#ff0000");
         assert!(CollisionLayers::parse("{ \"layers\": 3 }").is_err());
         assert!(CollisionLayers::parse("nope").is_err());
-        assert_eq!(CollisionLayers::parse("").unwrap().0, CollisionLayers::default());
+        assert_eq!(
+            CollisionLayers::parse("").unwrap().0,
+            CollisionLayers::default()
+        );
     }
 
     #[test]
@@ -990,18 +1108,30 @@ mod tests {
         for preset in PRESETS {
             let set = preset.build();
             assert!(set.len() <= MAX_LAYERS, "{}", preset.name);
-            assert!(set.index_of("Default").is_some(), "{} lacks Default", preset.name);
+            assert!(
+                set.index_of("Default").is_some(),
+                "{} lacks Default",
+                preset.name
+            );
             let issues = set.validate();
             assert!(
-                issues.iter().all(|i| i.severity != Severity::Error && i.severity != Severity::Warning),
+                issues
+                    .iter()
+                    .all(|i| i.severity != Severity::Error && i.severity != Severity::Warning),
                 "{}: {issues:?}",
                 preset.name
             );
             for (name, partners) in preset.rows {
                 let a = set.index_of(name).unwrap();
                 for partner in *partners {
-                    let b = set.index_of(partner).unwrap_or_else(|| panic!("{}: unknown layer {partner}", preset.name));
-                    assert!(set.collides(a, b), "{}: {name} should meet {partner}", preset.name);
+                    let b = set
+                        .index_of(partner)
+                        .unwrap_or_else(|| panic!("{}: unknown layer {partner}", preset.name));
+                    assert!(
+                        set.collides(a, b),
+                        "{}: {name} should meet {partner}",
+                        preset.name
+                    );
                 }
             }
         }
@@ -1016,18 +1146,38 @@ mod tests {
         set.collide_none();
         set.set_pair(0, 1, true);
         let text = set.to_rust_consts();
-        assert!(text.contains("pub const LAYER_DEFAULT: u32 = 1 << 0;"), "{text}");
+        assert!(
+            text.contains("pub const LAYER_DEFAULT: u32 = 1 << 0;"),
+            "{text}"
+        );
         assert!(text.contains("pub const LAYER_PLAYER_PROJECTILE: u32 = 1 << 1;"));
-        assert!(text.contains("LAYER_PLAYER_PROJECTILE_2"), "clashing names are numbered");
-        assert!(text.contains("LAYER__9_LIVES") || text.contains("LAYER_9_LIVES") || text.contains("_9_LIVES"));
-        assert!(text.contains("pub const MASK_DEFAULT: u32 = 0x00000002;"), "{text}");
+        assert!(
+            text.contains("LAYER_PLAYER_PROJECTILE_2"),
+            "clashing names are numbered"
+        );
+        assert!(
+            text.contains("LAYER__9_LIVES")
+                || text.contains("LAYER_9_LIVES")
+                || text.contains("_9_LIVES")
+        );
+        assert!(
+            text.contains("pub const MASK_DEFAULT: u32 = 0x00000002;"),
+            "{text}"
+        );
         let table = set.masks_table();
-        assert!(table.contains("0x00000001") && table.lines().count() == 5, "{table}");
+        assert!(
+            table.contains("0x00000001") && table.lines().count() == 5,
+            "{table}"
+        );
     }
 
     #[test]
     fn shooter_projectiles_ignore_their_own_side() {
-        let set = PRESETS.iter().find(|p| p.name == "Shooter").unwrap().build();
+        let set = PRESETS
+            .iter()
+            .find(|p| p.name == "Shooter")
+            .unwrap()
+            .build();
         let ix = |n: &str| set.index_of(n).unwrap();
         assert!(!set.collides(ix("PlayerProjectile"), ix("Player")));
         assert!(set.collides(ix("PlayerProjectile"), ix("Enemy")));

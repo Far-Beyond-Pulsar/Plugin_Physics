@@ -100,8 +100,12 @@ impl Default for JointComponent {
 impl JointComponent {
     /// `(min, max)` in order, or `None` when limits are off.
     pub fn limits(&self) -> Option<(f32, f32)> {
-        self.limits_enabled
-            .then(|| (self.limit_min.min(self.limit_max), self.limit_min.max(self.limit_max)))
+        self.limits_enabled.then(|| {
+            (
+                self.limit_min.min(self.limit_max),
+                self.limit_min.max(self.limit_max),
+            )
+        })
     }
 
     /// The axis as a unit vector; X when it is zero or not finite.
@@ -183,12 +187,14 @@ impl JointComponent {
                 .contacts_enabled(self.collide_connected)
                 .build()
                 .into(),
-            JointKind::Spring => SpringJointBuilder::new(self.rest_length, self.stiffness, self.damping)
-                .local_anchor1(a1)
-                .local_anchor2(a2)
-                .contacts_enabled(self.collide_connected)
-                .build()
-                .into(),
+            JointKind::Spring => {
+                SpringJointBuilder::new(self.rest_length, self.stiffness, self.damping)
+                    .local_anchor1(a1)
+                    .local_anchor2(a2)
+                    .contacts_enabled(self.collide_connected)
+                    .build()
+                    .into()
+            }
         }
     }
 }
@@ -218,7 +224,11 @@ fn read(world: &mut World, touched: &Touched) -> Option<Part> {
     let rows = read_rows::<JointComponent>(world, touched, |_| true)?;
     // Names are only looked up for joints that name something.
     let mut connected = HashMap::new();
-    if rows.upsert.iter().any(|r| !r.cfg.connected_object.is_empty()) {
+    if rows
+        .upsert
+        .iter()
+        .any(|r| !r.cfg.connected_object.is_empty())
+    {
         let names: HashMap<String, Entity> = world
             .query::<&Name>()
             .map(|(entity, name)| (name.0.clone(), entity))
@@ -326,7 +336,9 @@ fn settle(sim: &mut Sim) {
     sim.with_state::<State, _>(|state, sim| {
         for wanted in state.joints.values_mut() {
             let touches = sim.dirty.contains(&wanted.row.owner)
-                || wanted.connected.is_some_and(|other| sim.dirty.contains(&other));
+                || wanted
+                    .connected
+                    .is_some_and(|other| sim.dirty.contains(&other));
             if touches {
                 connect(sim, wanted);
             }

@@ -16,22 +16,25 @@
 use plugin_editor_api::*;
 
 pub mod assets;
+mod behavior;
 mod components;
 mod editors;
 mod file_types;
-mod behavior;
 mod math;
 mod physics_events;
 mod runtime;
 mod sim;
 pub use components::*;
-pub use runtime::{simulated_counts, wait_idle};
-pub use editors::{layers::EDITOR_ID as COLLISION_LAYERS_EDITOR_ID, material::EDITOR_ID as PHYSICS_MATERIAL_EDITOR_ID};
+pub use editors::{
+    layers::EDITOR_ID as COLLISION_LAYERS_EDITOR_ID,
+    material::EDITOR_ID as PHYSICS_MATERIAL_EDITOR_ID,
+};
+pub use events::PluginEventBus;
 pub use file_types::{
     COLLISION_LAYERS_EXT, COLLISION_LAYERS_ID, COMBINE_MODES, PHYSICS_MATERIAL_EXT,
     PHYSICS_MATERIAL_ID,
 };
-pub use events::PluginEventBus;
+pub use runtime::{simulated_counts, wait_idle};
 
 #[derive(Default)]
 pub struct PhysicsPlugin {
@@ -44,10 +47,9 @@ impl PluginRuntime for PhysicsPlugin {
         self.events = PluginEventBus::new();
         self
     }
-    
+
     fn stop(&mut self) {
         // Clean up the physics plugin runtime here.
-        
     }
 }
 
@@ -88,8 +90,13 @@ impl PhysicsPlugin {
     /// The editor that opens `path`, by its extension.
     pub fn editor_for_path(path: &std::path::Path) -> Option<EditorId> {
         let extension = path.extension()?.to_str()?;
-        let file_type = file_types::file_types().into_iter().find(|t| t.extension.eq_ignore_ascii_case(extension))?;
-        editors::editors().into_iter().find(|e| e.supported_file_types.contains(&file_type.id)).map(|e| e.id)
+        let file_type = file_types::file_types()
+            .into_iter()
+            .find(|t| t.extension.eq_ignore_ascii_case(extension))?;
+        editors::editors()
+            .into_iter()
+            .find(|e| e.supported_file_types.contains(&file_type.id))
+            .map(|e| e.id)
     }
 }
 
@@ -155,7 +162,11 @@ mod tests {
                 .iter()
                 .find(|(name, _)| *name == def.id)
                 .unwrap_or_else(|| panic!("no factory for {}", def.id));
-            assert!(!make().get_properties().is_empty(), "{} reflects nothing", def.id);
+            assert!(
+                !make().get_properties().is_empty(),
+                "{} reflects nothing",
+                def.id
+            );
         }
     }
 
@@ -165,11 +176,15 @@ mod tests {
         let editors = PhysicsPlugin::default().editors();
         assert_eq!(editors.len(), 2);
         assert_eq!(
-            PhysicsPlugin::editor_for_path(Path::new("assets/physics/Rubber.physmat")).unwrap().as_str(),
+            PhysicsPlugin::editor_for_path(Path::new("assets/physics/Rubber.physmat"))
+                .unwrap()
+                .as_str(),
             PHYSICS_MATERIAL_EDITOR_ID
         );
         assert_eq!(
-            PhysicsPlugin::editor_for_path(Path::new("Layers.PHYSLAYERS")).unwrap().as_str(),
+            PhysicsPlugin::editor_for_path(Path::new("Layers.PHYSLAYERS"))
+                .unwrap()
+                .as_str(),
             COLLISION_LAYERS_EDITOR_ID,
             "extensions match regardless of case"
         );

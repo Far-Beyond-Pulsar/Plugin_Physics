@@ -11,7 +11,9 @@ use ui::{h_flex, v_flex, ActiveTheme, Disableable, Icon, IconName, Sizable, Styl
 
 use crate::assets::layers::{RowOp, MAX_LAYERS};
 use crate::assets::{auto_color, hex_color, parse_hex_color};
-use crate::editors::common::chrome::{caption, color_of, empty_message, panel_header, section, swatch, MONO};
+use crate::editors::common::chrome::{
+    caption, color_of, empty_message, panel_header, section, swatch, MONO,
+};
 use crate::editors::common::panel::dock_panel;
 
 use super::state::{duplicate_layer, move_layer, remove_layer, Doc, Sel};
@@ -36,60 +38,96 @@ impl LayerInspector {
     pub fn new(doc: Doc, sel: Sel, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let name = cx.new(|cx| InputState::new(window, cx).placeholder("Layer name"));
         let color = cx.new(|cx| InputState::new(window, cx).placeholder("#rrggbb"));
-        let description = cx.new(|cx| InputState::new(window, cx).placeholder("What lives on this layer?"));
+        let description =
+            cx.new(|cx| InputState::new(window, cx).placeholder("What lives on this layer?"));
 
         let mut subscriptions = vec![cx.observe(&sel, |_, _, cx| cx.notify())];
 
         let (d, s) = (doc.clone(), sel.clone());
-        subscriptions.push(cx.subscribe_in(&name, window, move |this: &mut Self, input, event: &InputEvent, _w, cx| {
-            if !matches!(event, InputEvent::Change) {
-                return;
-            }
-            let len = d.read(cx).asset().len();
-            let Some(i) = s.read(cx).current(len) else { return };
-            let text = input.read(cx).value().to_string();
-            if d.read(cx).asset().layers[i].name == text {
-                this.name_error = None;
-                return;
-            }
-            let mut result = Ok(());
-            d.update(cx, |d, cx| d.edit("Rename layer", Some("rename"), cx, |set| result = set.rename(i, &text)));
-            this.name_error = result.err().map(|e| e.message());
-            cx.notify();
-        }));
+        subscriptions.push(cx.subscribe_in(
+            &name,
+            window,
+            move |this: &mut Self, input, event: &InputEvent, _w, cx| {
+                if !matches!(event, InputEvent::Change) {
+                    return;
+                }
+                let len = d.read(cx).asset().len();
+                let Some(i) = s.read(cx).current(len) else {
+                    return;
+                };
+                let text = input.read(cx).value().to_string();
+                if d.read(cx).asset().layers[i].name == text {
+                    this.name_error = None;
+                    return;
+                }
+                let mut result = Ok(());
+                d.update(cx, |d, cx| {
+                    d.edit("Rename layer", Some("rename"), cx, |set| {
+                        result = set.rename(i, &text)
+                    })
+                });
+                this.name_error = result.err().map(|e| e.message());
+                cx.notify();
+            },
+        ));
 
         let (d, s) = (doc.clone(), sel.clone());
-        subscriptions.push(cx.subscribe_in(&color, window, move |_this: &mut Self, input, event: &InputEvent, _w, cx| {
-            if !matches!(event, InputEvent::Change) {
-                return;
-            }
-            let len = d.read(cx).asset().len();
-            let Some(i) = s.read(cx).current(len) else { return };
-            let text = input.read(cx).value().trim().to_string();
-            if let Some(rgb) = parse_hex_color(&text) {
-                let hex = hex_color(rgb);
-                d.update(cx, |d, cx| {
-                    d.edit("Change layer color", Some("color"), cx, |set| set.layers[i].color = Some(hex))
-                });
-            }
-        }));
+        subscriptions.push(cx.subscribe_in(
+            &color,
+            window,
+            move |_this: &mut Self, input, event: &InputEvent, _w, cx| {
+                if !matches!(event, InputEvent::Change) {
+                    return;
+                }
+                let len = d.read(cx).asset().len();
+                let Some(i) = s.read(cx).current(len) else {
+                    return;
+                };
+                let text = input.read(cx).value().trim().to_string();
+                if let Some(rgb) = parse_hex_color(&text) {
+                    let hex = hex_color(rgb);
+                    d.update(cx, |d, cx| {
+                        d.edit("Change layer color", Some("color"), cx, |set| {
+                            set.layers[i].color = Some(hex)
+                        })
+                    });
+                }
+            },
+        ));
 
         let (d, s) = (doc.clone(), sel.clone());
-        subscriptions.push(cx.subscribe_in(&description, window, move |_this: &mut Self, input, event: &InputEvent, _w, cx| {
-            if !matches!(event, InputEvent::Change) {
-                return;
-            }
-            let len = d.read(cx).asset().len();
-            let Some(i) = s.read(cx).current(len) else { return };
-            let text = input.read(cx).value().to_string();
-            if d.read(cx).asset().layers[i].description != text {
-                d.update(cx, |d, cx| {
-                    d.edit("Edit layer notes", Some("layer-notes"), cx, |set| set.layers[i].description = text)
-                });
-            }
-        }));
+        subscriptions.push(cx.subscribe_in(
+            &description,
+            window,
+            move |_this: &mut Self, input, event: &InputEvent, _w, cx| {
+                if !matches!(event, InputEvent::Change) {
+                    return;
+                }
+                let len = d.read(cx).asset().len();
+                let Some(i) = s.read(cx).current(len) else {
+                    return;
+                };
+                let text = input.read(cx).value().to_string();
+                if d.read(cx).asset().layers[i].description != text {
+                    d.update(cx, |d, cx| {
+                        d.edit("Edit layer notes", Some("layer-notes"), cx, |set| {
+                            set.layers[i].description = text
+                        })
+                    });
+                }
+            },
+        ));
 
-        Self { doc, sel, name, color, description, name_error: None, focus_handle: cx.focus_handle(), _subscriptions: subscriptions }
+        Self {
+            doc,
+            sel,
+            name,
+            color,
+            description,
+            name_error: None,
+            focus_handle: cx.focus_handle(),
+            _subscriptions: subscriptions,
+        }
     }
 
     /// Show the selected layer's values in the text fields, unless one is
@@ -97,13 +135,22 @@ impl LayerInspector {
     fn sync_fields(&mut self, i: usize, window: &mut Window, cx: &mut Context<Self>) {
         let layer = self.doc.read(cx).asset().layers[i].clone();
         let hex = layer.color.clone().unwrap_or_default();
-        for (input, text) in [(&self.name, layer.name), (&self.color, hex), (&self.description, layer.description)] {
+        for (input, text) in [
+            (&self.name, layer.name),
+            (&self.color, hex),
+            (&self.description, layer.description),
+        ] {
             let focused = input.read(cx).focus_handle(cx).contains_focused(window, cx);
             if !focused && input.read(cx).value().as_ref() != text.as_str() {
                 input.update(cx, |input, cx| input.set_value(text, window, cx));
             }
         }
-        if !self.name.read(cx).focus_handle(cx).contains_focused(window, cx) {
+        if !self
+            .name
+            .read(cx)
+            .focus_handle(cx)
+            .contains_focused(window, cx)
+        {
             self.name_error = None;
         }
     }
@@ -122,11 +169,17 @@ impl LayerInspector {
                 .cursor_pointer()
                 .bg(color_of(rgb))
                 .border_1()
-                .border_color(if rgb == current { theme.foreground } else { theme.foreground.opacity(0.15) })
+                .border_color(if rgb == current {
+                    theme.foreground
+                } else {
+                    theme.foreground.opacity(0.15)
+                })
                 .on_click(move |_, _, cx| {
                     let hex = hex_color(rgb);
                     doc.update(cx, |d, cx| {
-                        d.edit("Change layer color", None, cx, |set| set.layers[i].color = Some(hex))
+                        d.edit("Change layer color", None, cx, |set| {
+                            set.layers[i].color = Some(hex)
+                        })
                     });
                 })
         });
@@ -147,7 +200,11 @@ impl LayerInspector {
                         h_flex()
                             .gap_1()
                             .items_center()
-                            .child(Icon::new(IconName::TriangleAlert).size(px(11.0)).text_color(theme.danger))
+                            .child(
+                                Icon::new(IconName::TriangleAlert)
+                                    .size(px(11.0))
+                                    .text_color(theme.danger),
+                            )
                             .child(div().text_xs().text_color(theme.danger).child(e))
                     })),
             )
@@ -169,14 +226,21 @@ impl LayerInspector {
                                     .tooltip("Pick a color from the layer's position")
                                     .on_click(move |_, _, cx| {
                                         auto_doc.update(cx, |d, cx| {
-                                            d.edit("Reset layer color", None, cx, |set| set.layers[i].color = None)
+                                            d.edit("Reset layer color", None, cx, |set| {
+                                                set.layers[i].color = None
+                                            })
                                         })
                                     }),
                             ),
                     )
                     .child(h_flex().gap_1().flex_wrap().children(palette)),
             )
-            .child(v_flex().gap_1().child(caption("Notes", cx)).child(TextInput::new(&self.description).small()))
+            .child(
+                v_flex()
+                    .gap_1()
+                    .child(caption("Notes", cx))
+                    .child(TextInput::new(&self.description).small()),
+            )
     }
 
     fn render_engine_view(&self, i: usize, cx: &App) -> impl IntoElement {
@@ -194,8 +258,20 @@ impl LayerInspector {
             h_flex()
                 .gap_2()
                 .items_baseline()
-                .child(div().w(px(76.0)).text_xs().text_color(theme.muted_foreground).child(label))
-                .child(div().text_xs().font_family(MONO).text_color(theme.foreground.opacity(0.92)).child(value))
+                .child(
+                    div()
+                        .w(px(76.0))
+                        .text_xs()
+                        .text_color(theme.muted_foreground)
+                        .child(label),
+                )
+                .child(
+                    div()
+                        .text_xs()
+                        .font_family(MONO)
+                        .text_color(theme.foreground.opacity(0.92))
+                        .child(value),
+                )
         };
         section(
             "What the engine sees",
@@ -222,7 +298,11 @@ impl LayerInspector {
                 .ghost()
                 .xsmall()
                 .tooltip(tip)
-                .on_click(move |_, _, cx| doc.update(cx, |d, cx| d.edit("Change collisions", None, cx, |s| s.apply_row(i, op))))
+                .on_click(move |_, _, cx| {
+                    doc.update(cx, |d, cx| {
+                        d.edit("Change collisions", None, cx, |s| s.apply_row(i, op))
+                    })
+                })
         };
 
         let rows = (0..n).map(|j| {
@@ -243,7 +323,9 @@ impl LayerInspector {
                         .checked(colliding)
                         .on_click(move |checked, _, cx| {
                             let on = *checked;
-                            doc.update(cx, |d, cx| d.edit("Toggle collision", None, cx, |s| s.set_pair(i, j, on)))
+                            doc.update(cx, |d, cx| {
+                                d.edit("Toggle collision", None, cx, |s| s.set_pair(i, j, on))
+                            })
                         }),
                 )
                 .child(swatch(color_of(set.color_of(j)), 12.0, cx))
@@ -254,7 +336,11 @@ impl LayerInspector {
                         .truncate()
                         .text_sm()
                         .text_color(theme.foreground)
-                        .child(if j == i { format!("{} (itself)", set.layers[j].name) } else { set.layers[j].name.clone() }),
+                        .child(if j == i {
+                            format!("{} (itself)", set.layers[j].name)
+                        } else {
+                            set.layers[j].name.clone()
+                        }),
                 )
                 .children(one_sided.then(|| Tag::warning().small().child("one-sided")))
         });
@@ -267,9 +353,24 @@ impl LayerInspector {
                 .child(
                     h_flex()
                         .gap_1()
-                        .child(op_button("partners-all", "All", "Collide with every layer", RowOp::CollideWithAll))
-                        .child(op_button("partners-none", "None", "Collide with no layer", RowOp::CollideWithNone))
-                        .child(op_button("partners-invert", "Invert", "Flip every pairing", RowOp::Invert)),
+                        .child(op_button(
+                            "partners-all",
+                            "All",
+                            "Collide with every layer",
+                            RowOp::CollideWithAll,
+                        ))
+                        .child(op_button(
+                            "partners-none",
+                            "None",
+                            "Collide with no layer",
+                            RowOp::CollideWithNone,
+                        ))
+                        .child(op_button(
+                            "partners-invert",
+                            "Invert",
+                            "Flip every pairing",
+                            RowOp::Invert,
+                        )),
                 )
                 .child(v_flex().children(rows)),
             cx,
@@ -360,7 +461,12 @@ impl Render for LayerInspector {
                 let name = self.doc.read(cx).asset().layers[i].name.clone();
                 (
                     name,
-                    Some(Tag::secondary().small().child(format!("bit {i}")).into_any_element()),
+                    Some(
+                        Tag::secondary()
+                            .small()
+                            .child(format!("bit {i}"))
+                            .into_any_element(),
+                    ),
                     v_flex()
                         .id("layer-inspector-scroll")
                         .flex_1()

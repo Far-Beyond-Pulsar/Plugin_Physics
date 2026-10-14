@@ -63,13 +63,33 @@ impl Default for ColliderAxis {
 /// A collider's shape with the dimensions that shape uses.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ColliderShapeData {
-    Box { half_extents: [f32; 3] },
-    Sphere { radius: f32 },
-    Capsule { radius: f32, height: f32, axis: ColliderAxis },
-    Cylinder { radius: f32, height: f32, axis: ColliderAxis },
-    Cone { radius: f32, height: f32, axis: ColliderAxis },
-    ConvexHull { mesh: String },
-    TriangleMesh { mesh: String },
+    Box {
+        half_extents: [f32; 3],
+    },
+    Sphere {
+        radius: f32,
+    },
+    Capsule {
+        radius: f32,
+        height: f32,
+        axis: ColliderAxis,
+    },
+    Cylinder {
+        radius: f32,
+        height: f32,
+        axis: ColliderAxis,
+    },
+    Cone {
+        radius: f32,
+        height: f32,
+        axis: ColliderAxis,
+    },
+    ConvexHull {
+        mesh: String,
+    },
+    TriangleMesh {
+        mesh: String,
+    },
 }
 
 #[engine_class(category = "Physics", clone, debug, serialize, deserialize)]
@@ -137,13 +157,27 @@ impl ColliderComponent {
                 half_extents: self.half_extents.map(size),
             },
             ColliderShape::Sphere => ColliderShapeData::Sphere { radius },
-            ColliderShape::Capsule => ColliderShapeData::Capsule { radius, height, axis },
-            ColliderShape::Cylinder => ColliderShapeData::Cylinder { radius, height, axis },
-            ColliderShape::Cone => ColliderShapeData::Cone { radius, height, axis },
-            ColliderShape::ConvexHull => ColliderShapeData::ConvexHull { mesh: self.mesh.clone() },
-            ColliderShape::TriangleMesh => {
-                ColliderShapeData::TriangleMesh { mesh: self.mesh.clone() }
-            }
+            ColliderShape::Capsule => ColliderShapeData::Capsule {
+                radius,
+                height,
+                axis,
+            },
+            ColliderShape::Cylinder => ColliderShapeData::Cylinder {
+                radius,
+                height,
+                axis,
+            },
+            ColliderShape::Cone => ColliderShapeData::Cone {
+                radius,
+                height,
+                axis,
+            },
+            ColliderShape::ConvexHull => ColliderShapeData::ConvexHull {
+                mesh: self.mesh.clone(),
+            },
+            ColliderShape::TriangleMesh => ColliderShapeData::TriangleMesh {
+                mesh: self.mesh.clone(),
+            },
         }
     }
 }
@@ -179,15 +213,27 @@ impl ColliderComponent {
                 1u8.hash(&mut h);
                 radius.to_bits().hash(&mut h);
             }
-            ColliderShapeData::Capsule { radius, height, axis } => {
+            ColliderShapeData::Capsule {
+                radius,
+                height,
+                axis,
+            } => {
                 2u8.hash(&mut h);
                 (radius.to_bits(), height.to_bits(), axis as u8).hash(&mut h);
             }
-            ColliderShapeData::Cylinder { radius, height, axis } => {
+            ColliderShapeData::Cylinder {
+                radius,
+                height,
+                axis,
+            } => {
                 3u8.hash(&mut h);
                 (radius.to_bits(), height.to_bits(), axis as u8).hash(&mut h);
             }
-            ColliderShapeData::Cone { radius, height, axis } => {
+            ColliderShapeData::Cone {
+                radius,
+                height,
+                axis,
+            } => {
                 4u8.hash(&mut h);
                 (radius.to_bits(), height.to_bits(), axis as u8).hash(&mut h);
             }
@@ -224,7 +270,9 @@ impl ColliderComponent {
     /// `None` for shapes that need a mesh asset; those are not simulated yet.
     fn builder(&self) -> Option<ColliderBuilder> {
         let builder = match self.shape() {
-            ColliderShapeData::Box { half_extents: [x, y, z] } => ColliderBuilder::cuboid(x, y, z),
+            ColliderShapeData::Box {
+                half_extents: [x, y, z],
+            } => ColliderBuilder::cuboid(x, y, z),
             ColliderShapeData::Sphere { radius } => ColliderBuilder::ball(radius),
             ColliderShapeData::Capsule { radius, height, .. } => {
                 ColliderBuilder::capsule_y(height * 0.5, radius)
@@ -333,12 +381,13 @@ fn upsert(state: &mut State, sim: &mut Sim, row: Row<ColliderComponent>) {
     };
     let local = row.cfg.local_pose();
     let handle = match parent {
-        Some(body) => sim.colliders.insert_with_parent(
-            builder.position(local).build(),
-            body,
-            &mut sim.bodies,
-        ),
-        None => sim.colliders.insert(builder.position(owner_pose * local).build()),
+        Some(body) => {
+            sim.colliders
+                .insert_with_parent(builder.position(local).build(), body, &mut sim.bodies)
+        }
+        None => sim
+            .colliders
+            .insert(builder.position(owner_pose * local).build()),
     };
     sim.collider_info.insert(
         handle,
@@ -417,7 +466,11 @@ fn after_steps(sim: &mut Sim, _seconds: f32, out: &mut Output) {
         } else {
             for (this, other) in [(a, b), (b, a)] {
                 out.events.push(PhysEvent {
-                    spec: if started { COLLISION_ENTER } else { COLLISION_EXIT },
+                    spec: if started {
+                        COLLISION_ENTER
+                    } else {
+                        COLLISION_EXIT
+                    },
                     owner: this.owner,
                     component: this.instance,
                     other: Some(other.owner),
@@ -448,22 +501,41 @@ mod tests {
     #[test]
     fn shape_uses_only_the_fields_of_its_kind() {
         let mut c = ColliderComponent::default();
-        assert_eq!(c.shape(), ColliderShapeData::Box { half_extents: [0.5; 3] });
+        assert_eq!(
+            c.shape(),
+            ColliderShapeData::Box {
+                half_extents: [0.5; 3]
+            }
+        );
         c.shape = ColliderShape::Capsule;
         c.axis = ColliderAxis::Z;
         assert_eq!(
             c.shape(),
-            ColliderShapeData::Capsule { radius: 0.5, height: 1.0, axis: ColliderAxis::Z }
+            ColliderShapeData::Capsule {
+                radius: 0.5,
+                height: 1.0,
+                axis: ColliderAxis::Z
+            }
         );
         c.shape = ColliderShape::ConvexHull;
         c.mesh = "meshes/rock.mesh".into();
-        assert_eq!(c.shape(), ColliderShapeData::ConvexHull { mesh: "meshes/rock.mesh".into() });
+        assert_eq!(
+            c.shape(),
+            ColliderShapeData::ConvexHull {
+                mesh: "meshes/rock.mesh".into()
+            }
+        );
     }
 
     #[test]
     fn negative_sizes_clamp_to_zero() {
         let mut c = ColliderComponent::default();
         c.half_extents = [-1.0, 2.0, 0.0];
-        assert_eq!(c.shape(), ColliderShapeData::Box { half_extents: [0.0, 2.0, 0.0] });
+        assert_eq!(
+            c.shape(),
+            ColliderShapeData::Box {
+                half_extents: [0.0, 2.0, 0.0]
+            }
+        );
     }
 }

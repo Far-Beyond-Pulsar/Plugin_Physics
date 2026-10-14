@@ -78,7 +78,9 @@ impl<A: Asset> ScalarField<A> {
                 return;
             }
             let set = spec.set;
-            doc.update(cx, |d, cx| d.edit(spec.label, Some(spec.key), cx, |a| set(a, value)));
+            doc.update(cx, |d, cx| {
+                d.edit(spec.label, Some(spec.key), cx, |a| set(a, value))
+            });
         }
 
         let mut subscriptions = Vec::new();
@@ -122,7 +124,12 @@ impl<A: Asset> ScalarField<A> {
             },
         ));
 
-        Self { slider, input, spec, _subscriptions: subscriptions }
+        Self {
+            slider,
+            input,
+            spec,
+            _subscriptions: subscriptions,
+        }
     }
 
     /// Bring the controls to `value` (the document's). Cheap when they
@@ -130,12 +137,20 @@ impl<A: Asset> ScalarField<A> {
     pub fn sync<V: 'static>(&self, value: f32, window: &mut Window, cx: &mut Context<V>) {
         let target = value.clamp(self.spec.min, self.spec.max);
         if (self.slider.read(cx).value().end() - target).abs() > 1e-5 {
-            self.slider.update(cx, |s, cx| s.set_value(target, window, cx));
+            self.slider
+                .update(cx, |s, cx| s.set_value(target, window, cx));
         }
         let text = format!("{value:.*}", self.spec.decimals);
-        let focused = self.input.read(cx).focus_handle(cx).contains_focused(window, cx);
+        let focused = self
+            .input
+            .read(cx)
+            .focus_handle(cx)
+            .contains_focused(window, cx);
         let current = self.input.read(cx).value().to_string();
-        let same_number = current.trim().parse::<f32>().is_ok_and(|v| (v - value).abs() < 1e-6);
+        let same_number = current
+            .trim()
+            .parse::<f32>()
+            .is_ok_and(|v| (v - value).abs() < 1e-6);
         if !focused && current != text && !same_number {
             self.input.update(cx, |i, cx| i.set_value(text, window, cx));
         }
@@ -148,7 +163,11 @@ impl<A: Asset> ScalarField<A> {
             .w_full()
             .gap_2()
             .items_center()
-            .child(div().flex_1().child(Slider::new(&self.slider).disabled(disabled)))
+            .child(
+                div()
+                    .flex_1()
+                    .child(Slider::new(&self.slider).disabled(disabled)),
+            )
             .child(
                 div()
                     .w(px(86.0))

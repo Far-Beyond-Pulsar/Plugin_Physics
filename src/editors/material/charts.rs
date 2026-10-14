@@ -8,7 +8,9 @@ use gpui::*;
 use ui::PixelsExt;
 
 use crate::assets::material::{BounceArc, SlopeState};
-use crate::editors::common::paint::{arrow, dashed_line, dot, fill_polygon, pt, stroke_polyline, ChartColors};
+use crate::editors::common::paint::{
+    arrow, dashed_line, dot, fill_polygon, pt, stroke_polyline, ChartColors,
+};
 
 /// Space left around the bounce plot for the axes, in pixels.
 pub const PLOT_LEFT: f32 = 40.0;
@@ -57,7 +59,9 @@ impl BouncePlot {
         // The curve, sampled finely enough that the arcs look smooth.
         let mut curve: Vec<Point<Pixels>> = Vec::new();
         for arc in &self.arcs {
-            let steps = (((arc.end - arc.start) / duration) * (right - left) / 3.0).ceil().clamp(6.0, 90.0) as usize;
+            let steps = (((arc.end - arc.start) / duration) * (right - left) / 3.0)
+                .ceil()
+                .clamp(6.0, 90.0) as usize;
             for i in 0..=steps {
                 let t = arc.start + (arc.end - arc.start) * i as f32 / steps as f32;
                 curve.push(pt(x_of(t), y_of(arc.height_at(t, self.gravity))));
@@ -84,7 +88,12 @@ impl BouncePlot {
         }
 
         // Axes on top.
-        stroke_polyline(window, &[pt(left, top), pt(left, bottom), pt(right, bottom)], 1.5, c.axis);
+        stroke_polyline(
+            window,
+            &[pt(left, top), pt(left, bottom), pt(right, bottom)],
+            1.5,
+            c.axis,
+        );
     }
 }
 
@@ -104,7 +113,11 @@ fn grid_seconds(duration: f32) -> impl Iterator<Item = f32> {
     } else {
         (duration / MAX_LINES).ceil()
     };
-    let lines = if step.is_finite() { (duration / step).ceil() as usize } else { 0 };
+    let lines = if step.is_finite() {
+        (duration / step).ceil() as usize
+    } else {
+        0
+    };
     (1..lines.min(MAX_LINES as usize + 2))
         .map(move |k| k as f32 * step)
         .filter(move |second| *second < duration)
@@ -134,14 +147,30 @@ impl SlopePlot {
         let theta = s.angle_deg.to_radians();
         let (cos, sin) = (theta.cos().max(0.05), theta.sin());
         // Longest ramp that fits at this angle.
-        let length = (avail_w / cos).min(if sin > 0.02 { avail_h / sin } else { f32::MAX }).min(avail_w * 1.1);
+        let length = (avail_w / cos)
+            .min(if sin > 0.02 { avail_h / sin } else { f32::MAX })
+            .min(avail_w * 1.1);
         let top = (base_x + length * theta.cos(), base_y - length * sin);
         let foot = (base_x + length * theta.cos(), base_y);
 
         // Ground and ramp body.
-        stroke_polyline(window, &[pt(base_x - 6.0, base_y), pt(base_x + avail_w + 6.0, base_y)], 1.5, c.axis);
-        fill_polygon(window, &[pt(base_x, base_y), pt(foot.0, foot.1), pt(top.0, top.1)], c.fill);
-        stroke_polyline(window, &[pt(base_x, base_y), pt(top.0, top.1), pt(foot.0, foot.1)], 1.8, c.line);
+        stroke_polyline(
+            window,
+            &[pt(base_x - 6.0, base_y), pt(base_x + avail_w + 6.0, base_y)],
+            1.5,
+            c.axis,
+        );
+        fill_polygon(
+            window,
+            &[pt(base_x, base_y), pt(foot.0, foot.1), pt(top.0, top.1)],
+            c.fill,
+        );
+        stroke_polyline(
+            window,
+            &[pt(base_x, base_y), pt(top.0, top.1), pt(foot.0, foot.1)],
+            1.8,
+            c.line,
+        );
 
         // The steepest angle the block would hold on.
         let crit = s.critical_deg.to_radians();
@@ -173,8 +202,14 @@ impl SlopePlot {
         let corners = [
             (px_ - tx * half, py_ - ty * half),
             (px_ + tx * half, py_ + ty * half),
-            (px_ + tx * half + nx * size_px, py_ + ty * half + ny * size_px),
-            (px_ - tx * half + nx * size_px, py_ - ty * half + ny * size_px),
+            (
+                px_ + tx * half + nx * size_px,
+                py_ + ty * half + ny * size_px,
+            ),
+            (
+                px_ - tx * half + nx * size_px,
+                py_ - ty * half + ny * size_px,
+            ),
         ];
         let block_color = if s.slipping { c.bad } else { c.good };
         let corner_points: Vec<_> = corners.iter().map(|(x, y)| pt(*x, *y)).collect();
@@ -187,18 +222,42 @@ impl SlopePlot {
         let center = (px_ + nx * half * 1.0, py_ + ny * half * 1.0);
         let scale = 4.2; // px per m/s²
         let g = 9.806_65_f32;
-        arrow(window, center, (center.0, center.1 + g * scale), 2.0, c.text);
-        arrow(window, center, (center.0 + nx * s.normal * scale, center.1 + ny * s.normal * scale), 2.0, c.info);
         arrow(
             window,
             center,
-            (center.0 + tx * s.resisting * scale, center.1 + ty * s.resisting * scale),
+            (center.0, center.1 + g * scale),
+            2.0,
+            c.text,
+        );
+        arrow(
+            window,
+            center,
+            (
+                center.0 + nx * s.normal * scale,
+                center.1 + ny * s.normal * scale,
+            ),
+            2.0,
+            c.info,
+        );
+        arrow(
+            window,
+            center,
+            (
+                center.0 + tx * s.resisting * scale,
+                center.1 + ty * s.resisting * scale,
+            ),
             2.0,
             c.warn,
         );
         if s.slipping {
             let net = s.acceleration * scale;
-            arrow(window, center, (center.0 - tx * net, center.1 - ty * net), 2.4, c.bad);
+            arrow(
+                window,
+                center,
+                (center.0 - tx * net, center.1 - ty * net),
+                2.4,
+                c.bad,
+            );
         }
     }
 }
@@ -210,7 +269,10 @@ mod tests {
     #[test]
     fn grid_lines_stay_few_whatever_the_span() {
         assert_eq!(grid_seconds(3.5).collect::<Vec<_>>(), [1.0, 2.0, 3.0]);
-        assert_eq!(grid_seconds(20.0).collect::<Vec<_>>(), [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+        assert_eq!(
+            grid_seconds(20.0).collect::<Vec<_>>(),
+            [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]
+        );
         assert!(grid_seconds(1e6).count() <= 13);
         // Restitution above 1: the path grows without bound.
         assert!(grid_seconds(3f32.powi(48)).count() <= 13);

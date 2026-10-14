@@ -47,7 +47,12 @@ pub struct Issue<F> {
 
 impl<F> Issue<F> {
     pub fn new(severity: Severity, subject: impl Into<String>, message: impl Into<String>) -> Self {
-        Self { severity, subject: subject.into(), message: message.into(), fix: None }
+        Self {
+            severity,
+            subject: subject.into(),
+            message: message.into(),
+            fix: None,
+        }
     }
 
     pub fn with_fix(mut self, fix: F) -> Self {
@@ -103,7 +108,11 @@ pub fn auto_color(index: usize) -> [u8; 3] {
         4 => (x, 0.0, c),
         _ => (c, 0.0, x),
     };
-    [((r + m) * 255.0).round() as u8, ((g + m) * 255.0).round() as u8, ((b + m) * 255.0).round() as u8]
+    [
+        ((r + m) * 255.0).round() as u8,
+        ((g + m) * 255.0).round() as u8,
+        ((b + m) * 255.0).round() as u8,
+    ]
 }
 
 #[cfg(test)]

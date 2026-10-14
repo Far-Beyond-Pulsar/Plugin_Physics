@@ -7,8 +7,8 @@
 
 mod charts;
 mod interaction;
-mod preview;
 mod presets;
+mod preview;
 mod properties;
 
 use std::path::PathBuf;
@@ -29,8 +29,8 @@ use crate::editors::common::panel::{build_workspace, Dock, Layout};
 use crate::editors::common::toolbar::{document_controls, file_banners, status_tag};
 
 use interaction::{InteractionPanel, MassPanel};
-use preview::PreviewPanel;
 use presets::PresetsPanel;
+use preview::PreviewPanel;
 use properties::MaterialProperties;
 
 pub const EDITOR_ID: &str = "physics-material-editor";
@@ -74,11 +74,24 @@ impl MaterialEditor {
             left: Some(Dock::new(270.0, vec![as_panel(presets)])),
             right: Some(Dock::new(350.0, vec![as_panel(properties)])),
             // Side by side rather than tabbed: both are glanceable references.
-            bottom: Some(Dock::side_by_side(250.0, vec![as_panel(interactions), as_panel(mass)])),
+            bottom: Some(Dock::side_by_side(
+                250.0,
+                vec![as_panel(interactions), as_panel(mass)],
+            )),
         };
-        let workspace = build_workspace("physics-material-workspace", DOCK_CHANNEL, layout, window, cx);
+        let workspace = build_workspace(
+            "physics-material-workspace",
+            DOCK_CHANNEL,
+            layout,
+            window,
+            cx,
+        );
 
-        Self { doc, workspace, focus_handle: cx.focus_handle() }
+        Self {
+            doc,
+            workspace,
+            focus_handle: cx.focus_handle(),
+        }
     }
 
     fn render_toolbar(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -108,19 +121,39 @@ impl MaterialEditor {
             .border_color(theme.border)
             .child(document_controls("material", &self.doc, cx))
             .child(toolbar_divider(cx))
-            .child(Icon::new(IconName::Droplet).size(px(15.0)).text_color(theme.info))
-            .child(div().text_sm().font_semibold().text_color(theme.foreground).child(name))
+            .child(
+                Icon::new(IconName::Droplet)
+                    .size(px(15.0))
+                    .text_color(theme.info),
+            )
+            .child(
+                div()
+                    .text_sm()
+                    .font_semibold()
+                    .text_color(theme.foreground)
+                    .child(name),
+            )
             .child(swatch(surface_color, 14.0, cx))
             .child(Tag::secondary().small().child(surface_label))
             .child(div().flex_1())
-            .children(worst.map(|w| match w {
-                Severity::Error => Tag::danger().small().child(format!("{issue_count} issues")).into_any_element(),
-                Severity::Warning => Tag::warning().small().child(format!("{issue_count} issues")).into_any_element(),
-                Severity::Info => Tag::info().small().child(format!("{issue_count} notes")).into_any_element(),
+            .children(worst.map(|w| {
+                match w {
+                    Severity::Error => Tag::danger()
+                        .small()
+                        .child(format!("{issue_count} issues"))
+                        .into_any_element(),
+                    Severity::Warning => Tag::warning()
+                        .small()
+                        .child(format!("{issue_count} issues"))
+                        .into_any_element(),
+                    Severity::Info => Tag::info()
+                        .small()
+                        .child(format!("{issue_count} notes"))
+                        .into_any_element(),
+                }
             }))
             .child(status_tag(&self.doc, cx))
     }
-
 }
 
 impl EventEmitter<PanelEvent> for MaterialEditor {}

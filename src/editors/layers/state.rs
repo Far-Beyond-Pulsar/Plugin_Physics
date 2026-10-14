@@ -33,7 +33,9 @@ impl LayerSelection {
 /// Add a layer and select it. Does nothing at the 32-layer limit.
 pub fn add_layer(doc: &Doc, sel: &Sel, cx: &mut App) {
     let mut added = None;
-    doc.update(cx, |d, cx| d.edit("Add layer", None, cx, |set| added = set.add(None)));
+    doc.update(cx, |d, cx| {
+        d.edit("Add layer", None, cx, |set| added = set.add(None))
+    });
     if let Some(i) = added {
         sel.update(cx, |s, cx| s.select(Some(i), cx));
     }
@@ -48,14 +50,20 @@ pub fn remove_layer(doc: &Doc, sel: &Sel, i: usize, cx: &mut App) {
             left = set.len();
         })
     });
-    let next = if left == 0 { None } else { Some(i.min(left - 1)) };
+    let next = if left == 0 {
+        None
+    } else {
+        Some(i.min(left - 1))
+    };
     sel.update(cx, |s, cx| s.select(next, cx));
 }
 
 /// Duplicate layer `i` and select the copy.
 pub fn duplicate_layer(doc: &Doc, sel: &Sel, i: usize, cx: &mut App) {
     let mut copy = None;
-    doc.update(cx, |d, cx| d.edit("Duplicate layer", None, cx, |set| copy = set.duplicate(i)));
+    doc.update(cx, |d, cx| {
+        d.edit("Duplicate layer", None, cx, |set| copy = set.duplicate(i))
+    });
     if let Some(c) = copy {
         sel.update(cx, |s, cx| s.select(Some(c), cx));
     }
@@ -68,6 +76,8 @@ pub fn move_layer(doc: &Doc, sel: &Sel, i: usize, delta: isize, cx: &mut App) {
     if target == i {
         return;
     }
-    doc.update(cx, |d, cx| d.edit("Reorder layers", None, cx, |set| set.move_layer(i, target)));
+    doc.update(cx, |d, cx| {
+        d.edit("Reorder layers", None, cx, |set| set.move_layer(i, target))
+    });
     sel.update(cx, |s, cx| s.select(Some(target), cx));
 }

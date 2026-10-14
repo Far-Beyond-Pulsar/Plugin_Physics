@@ -146,7 +146,11 @@ pub fn field_force(
         // Y x offset: counter-clockwise seen from above.
         ForceFieldKind::Vortex => unit([offset[2], 0.0, -offset[0]]),
         ForceFieldKind::Drag => {
-            return [-velocity[0] * scale, -velocity[1] * scale, -velocity[2] * scale];
+            return [
+                -velocity[0] * scale,
+                -velocity[1] * scale,
+                -velocity[2] * scale,
+            ];
         }
     };
     direction.map(|d| d * scale)
@@ -163,7 +167,8 @@ struct State {
 }
 
 fn read(world: &mut World, touched: &Touched) -> Option<Part> {
-    read_rows::<ForceFieldComponent>(world, touched, |c| c.enabled).map(|rows| Box::new(rows) as Part)
+    read_rows::<ForceFieldComponent>(world, touched, |c| c.enabled)
+        .map(|rows| Box::new(rows) as Part)
 }
 
 fn apply(sim: &mut Sim, part: Part) {
@@ -283,7 +288,10 @@ mod behavior_tests {
         field.falloff = FalloffMode::Linear;
         let f = field_force(&field, [0.0; 3], [5.0, 0.0, 0.0], [0.0; 3]);
         assert!(f[0] < 0.0 && f[1] == 0.0, "pulls toward the centre: {f:?}");
-        assert_eq!(field_force(&field, [0.0; 3], [11.0, 0.0, 0.0], [0.0; 3]), [0.0; 3]);
+        assert_eq!(
+            field_force(&field, [0.0; 3], [11.0, 0.0, 0.0], [0.0; 3]),
+            [0.0; 3]
+        );
         field.kind = ForceFieldKind::Drag;
         let f = field_force(&field, [0.0; 3], [1.0, 0.0, 0.0], [4.0, 0.0, 0.0]);
         assert!(f[0] < 0.0);

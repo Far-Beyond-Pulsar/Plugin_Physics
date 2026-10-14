@@ -9,9 +9,11 @@ use rapier3d::parry::query::DefaultQueryDispatcher;
 use rapier3d::pipeline::QueryFilter;
 use rapier3d::prelude::*;
 
-use crate::behavior::{read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx};
+use crate::behavior::{
+    read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx,
+};
 use crate::declare_events;
-use crate::math::{euler_degrees_from_quat, pose, vector, array};
+use crate::math::{array, euler_degrees_from_quat, pose, vector};
 use crate::sim::{ColliderInfo, Sim, GRAVITY};
 
 /// The class name scripts and level files use.
@@ -280,13 +282,15 @@ fn after_steps(sim: &mut Sim, seconds: f32, out: &mut Output) {
                 &sim.colliders,
                 QueryFilter::default().exclude_rigid_body(handle),
             );
-            let movement = cfg
-                .controller()
-                .move_shape(seconds, &queries, &shape, &position, desired, |_| {});
+            let movement =
+                cfg.controller()
+                    .move_shape(seconds, &queries, &shape, &position, desired, |_| {});
             let new_position = array(position.translation + movement.translation);
             // Landing or hitting a ceiling stops vertical motion.
             if (movement.grounded && t.vertical < 0.0)
-                || (!movement.grounded && movement.translation.y < desired.y - 1e-4 && t.vertical > 0.0)
+                || (!movement.grounded
+                    && movement.translation.y < desired.y - 1e-4
+                    && t.vertical > 0.0)
             {
                 t.vertical = 0.0;
             }
@@ -299,7 +303,11 @@ fn after_steps(sim: &mut Sim, seconds: f32, out: &mut Output) {
             if movement.grounded != t.grounded {
                 t.grounded = movement.grounded;
                 out.events.push(PhysEvent {
-                    spec: if movement.grounded { GROUNDED } else { AIRBORNE },
+                    spec: if movement.grounded {
+                        GROUNDED
+                    } else {
+                        AIRBORNE
+                    },
                     owner: t.owner,
                     component: instance,
                     other: None,
