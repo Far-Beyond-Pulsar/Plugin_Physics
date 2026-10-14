@@ -11,6 +11,8 @@ pub const PHYSICS_MATERIAL_ID: &str = "physics_material";
 pub const PHYSICS_MATERIAL_EXT: &str = "physmat";
 pub const COLLISION_LAYERS_ID: &str = "collision_layers";
 pub const COLLISION_LAYERS_EXT: &str = "physlayers";
+pub const SKELETAL_PHYSICS_ID: &str = "skeletal_physics";
+pub const SKELETAL_PHYSICS_EXT: &str = "physasset";
 
 const CATEGORY: &str = "Physics";
 const CREATION_DIR: &str = "physics";
@@ -48,6 +50,22 @@ pub fn file_types() -> Vec<FileTypeDefinition> {
             default_content: json!({
                 "version": 1,
                 "layers": [{ "name": "Default", "collides_with": ["Default"] }],
+            }),
+            categories: vec![CATEGORY.to_string()],
+            creation_directory: Some(CREATION_DIR.to_string()),
+        },
+        FileTypeDefinition {
+            id: FileTypeId::new(SKELETAL_PHYSICS_ID),
+            extension: SKELETAL_PHYSICS_EXT.to_string(),
+            display_name: "Skeletal Physics Asset".to_string(),
+            icon: ui::IconName::Box,
+            color: gpui::rgb(0xF4C542).into(),
+            structure: FileStructure::Standalone,
+            default_content: json!({
+                "version": 1,
+                "skeletal_mesh": "00000000-0000-4000-8000-000000000000",
+                "bodies": [],
+                "constraints": [],
             }),
             categories: vec![CATEGORY.to_string()],
             creation_directory: Some(CREATION_DIR.to_string()),

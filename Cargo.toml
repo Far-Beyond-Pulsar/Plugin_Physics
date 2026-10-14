@@ -18,6 +18,9 @@ gpui-ce = { workspace = true }
 ui = { workspace = true }
 plugin_editor_api = { workspace = true }
 engine_class_derive = { workspace = true }
+engine_fs = { workspace = true, features = ["editor"] }
+engine_state = { workspace = true }
+helio_component = { workspace = true }
 # Enum properties get a dropdown editor, which needs the GPUI-typed prims (as helio-component).
 pulsar_reflection = { workspace = true, features = ["prims-gpui"] }
 pulsar_scenedb = { workspace = true }
@@ -26,6 +29,9 @@ pulsar_events = { workspace = true }
 profiling = { workspace = true }
 inventory = { workspace = true }
 rapier3d = { workspace = true }
+glam = { workspace = true }
+skeletal_assets = { workspace = true }
+pulsar_physics = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

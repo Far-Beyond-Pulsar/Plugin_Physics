@@ -4,6 +4,7 @@
 pub mod common;
 pub mod layers;
 pub mod material;
+pub mod rig;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -12,7 +13,7 @@ use gpui::{App, AppContext as _, Window};
 use plugin_editor_api::{EditorId, EditorMetadata, FileTypeId, PluginError, UndoService};
 use ui::dock::PanelView;
 
-use crate::file_types::{COLLISION_LAYERS_ID, PHYSICS_MATERIAL_ID};
+use crate::file_types::{COLLISION_LAYERS_ID, PHYSICS_MATERIAL_ID, SKELETAL_PHYSICS_ID};
 
 /// The editors this plugin provides.
 pub fn editors() -> Vec<EditorMetadata> {
@@ -26,6 +27,11 @@ pub fn editors() -> Vec<EditorMetadata> {
             id: EditorId::new(layers::EDITOR_ID),
             display_name: "Collision Layers Editor".into(),
             supported_file_types: vec![FileTypeId::new(COLLISION_LAYERS_ID)],
+        },
+        EditorMetadata {
+            id: EditorId::new(rig::EDITOR_ID),
+            display_name: "Skeletal Physics Editor".into(),
+            supported_file_types: vec![FileTypeId::new(SKELETAL_PHYSICS_ID)],
         },
     ]
 }
@@ -46,6 +52,10 @@ pub fn create_editor(
         }
         layers::EDITOR_ID => {
             let panel = cx.new(|cx| layers::LayersEditor::new(path, undo, window, cx));
+            Ok(Arc::new(panel))
+        }
+        rig::EDITOR_ID => {
+            let panel = cx.new(|cx| rig::RigEditor::new(path, undo, window, cx));
             Ok(Arc::new(panel))
         }
         other => Err(PluginError::Other {

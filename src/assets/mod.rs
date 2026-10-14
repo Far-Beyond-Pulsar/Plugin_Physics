@@ -10,6 +10,7 @@
 
 pub mod layers;
 pub mod material;
+pub mod rig;
 
 use serde::{Deserialize, Serialize};
 

@@ -28,11 +28,12 @@ pub use components::*;
 pub use editors::{
     layers::EDITOR_ID as COLLISION_LAYERS_EDITOR_ID,
     material::EDITOR_ID as PHYSICS_MATERIAL_EDITOR_ID,
+    rig::EDITOR_ID as SKELETAL_PHYSICS_EDITOR_ID,
 };
 pub use events::PluginEventBus;
 pub use file_types::{
     COLLISION_LAYERS_EXT, COLLISION_LAYERS_ID, COMBINE_MODES, PHYSICS_MATERIAL_EXT,
-    PHYSICS_MATERIAL_ID,
+    PHYSICS_MATERIAL_ID, SKELETAL_PHYSICS_EXT, SKELETAL_PHYSICS_ID,
 };
 pub use runtime::{simulated_counts, wait_idle};
 
@@ -60,7 +61,9 @@ impl EditorPlugin for PhysicsPlugin {
             name: "Physics".into(),
             version: "0.1.0".into(),
             author: "Pulsar Team".into(),
-            description: "Physics materials, collision layers and the editors for them".into(),
+            description:
+                "Physics materials, collision layers, skeletal physics assets and their editors"
+                    .into(),
         }
     }
 
@@ -143,7 +146,14 @@ mod tests {
     fn registers_unique_physics_file_types() {
         let types = PhysicsPlugin::default().file_types();
         let exts: Vec<_> = types.iter().map(|t| t.extension.as_str()).collect();
-        assert_eq!(exts, [PHYSICS_MATERIAL_EXT, COLLISION_LAYERS_EXT]);
+        assert_eq!(
+            exts,
+            [
+                PHYSICS_MATERIAL_EXT,
+                COLLISION_LAYERS_EXT,
+                SKELETAL_PHYSICS_EXT
+            ]
+        );
         assert!(types.iter().all(|t| t.is_creatable()));
     }
 
@@ -174,7 +184,7 @@ mod tests {
     fn each_asset_type_opens_in_its_own_editor() {
         use std::path::Path;
         let editors = PhysicsPlugin::default().editors();
-        assert_eq!(editors.len(), 2);
+        assert_eq!(editors.len(), 3);
         assert_eq!(
             PhysicsPlugin::editor_for_path(Path::new("assets/physics/Rubber.physmat"))
                 .unwrap()
@@ -189,6 +199,12 @@ mod tests {
             "extensions match regardless of case"
         );
         assert!(PhysicsPlugin::editor_for_path(Path::new("notes.txt")).is_none());
+        assert_eq!(
+            PhysicsPlugin::editor_for_path(Path::new("rigs/Character.physasset"))
+                .unwrap()
+                .as_str(),
+            SKELETAL_PHYSICS_EDITOR_ID
+        );
         assert!(PhysicsPlugin::editor_for_path(Path::new("no_extension")).is_none());
     }
 

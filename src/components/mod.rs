@@ -9,6 +9,7 @@ mod collider;
 mod force_field;
 mod joint;
 mod rigid_body;
+mod skeletal_rig;
 
 pub use character_controller::{
     CharacterControllerComponent, AIRBORNE, CHARACTER_CONTROLLER_CLASS_NAME, GROUNDED,
