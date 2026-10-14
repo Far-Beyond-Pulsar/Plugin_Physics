@@ -49,11 +49,9 @@ impl BouncePlot {
             let y = bottom - frac * (bottom - top);
             stroke_polyline(window, &[pt(left, y), pt(right, y)], 1.0, c.grid);
         }
-        let mut second = 1.0_f32;
-        while second < duration {
+        for second in grid_seconds(duration) {
             let x = x_of(second);
             stroke_polyline(window, &[pt(x, top), pt(x, bottom)], 1.0, c.grid);
-            second += if duration > 12.0 { 2.0 } else { 1.0 };
         }
 
         // The curve, sampled finely enough that the arcs look smooth.
@@ -88,6 +86,28 @@ impl BouncePlot {
         // Axes on top.
         stroke_polyline(window, &[pt(left, top), pt(left, bottom), pt(right, bottom)], 1.5, c.axis);
     }
+}
+
+/// The times the bounce plot draws a grid line at: every second, every two
+/// past 12 s, and wider steps for longer spans so there are never more than
+/// a dozen or so. An invalid material (restitution above 1) can make the
+/// span astronomically long or infinite; that draws no lines rather than
+/// stepping one second at a time towards it.
+fn grid_seconds(duration: f32) -> impl Iterator<Item = f32> {
+    const MAX_LINES: f32 = 12.0;
+    let step = if !duration.is_finite() {
+        f32::INFINITY
+    } else if duration <= MAX_LINES {
+        1.0
+    } else if duration <= 2.0 * MAX_LINES {
+        2.0
+    } else {
+        (duration / MAX_LINES).ceil()
+    };
+    let lines = if step.is_finite() { (duration / step).ceil() as usize } else { 0 };
+    (1..lines.min(MAX_LINES as usize + 2))
+        .map(move |k| k as f32 * step)
+        .filter(move |second| *second < duration)
 }
 
 // ── Incline diagram ────────────────────────────────────────────────────────
@@ -180,5 +200,21 @@ impl SlopePlot {
             let net = s.acceleration * scale;
             arrow(window, center, (center.0 - tx * net, center.1 - ty * net), 2.4, c.bad);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::grid_seconds;
+
+    #[test]
+    fn grid_lines_stay_few_whatever_the_span() {
+        assert_eq!(grid_seconds(3.5).collect::<Vec<_>>(), [1.0, 2.0, 3.0]);
+        assert_eq!(grid_seconds(20.0).collect::<Vec<_>>(), [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+        assert!(grid_seconds(1e6).count() <= 13);
+        // Restitution above 1: the path grows without bound.
+        assert!(grid_seconds(3f32.powi(48)).count() <= 13);
+        assert_eq!(grid_seconds(f32::INFINITY).count(), 0);
+        assert_eq!(grid_seconds(f32::NAN).count(), 0);
     }
 }
