@@ -5,15 +5,17 @@
 
 use gpui::prelude::FluentBuilder;
 use gpui::*;
-use ui::PixelsExt;
 use ui::button::{Button, ButtonVariants};
 use ui::tag::Tag;
+use ui::PixelsExt;
 use ui::{h_flex, v_flex, ActiveTheme, IconName, Selectable, Sizable, StyledExt};
 
 use crate::assets::layers::CollisionLayers;
-use crate::editors::common::chrome::{caption, color_of, empty_message, panel_header, toolbar_divider};
-use crate::editors::common::panel::dock_panel;
+use crate::editors::common::chrome::{
+    caption, color_of, empty_message, panel_header, toolbar_divider,
+};
 use crate::editors::common::paint::{stroke_polyline, ChartColors};
+use crate::editors::common::panel::dock_panel;
 
 use super::state::{Doc, Sel};
 
@@ -46,9 +48,17 @@ pub fn edges(set: &CollisionLayers) -> Vec<Edge> {
     for a in 0..n {
         for b in (a + 1)..n {
             if set.collides(a, b) {
-                out.push(Edge { a, b, one_sided: false });
+                out.push(Edge {
+                    a,
+                    b,
+                    one_sided: false,
+                });
             } else if set.is_one_sided(a, b) {
-                out.push(Edge { a, b, one_sided: true });
+                out.push(Edge {
+                    a,
+                    b,
+                    one_sided: true,
+                });
             }
         }
     }
@@ -69,7 +79,13 @@ dock_panel!(LayerGraph, "physics-layers-graph", "Graph");
 impl LayerGraph {
     pub fn new(doc: Doc, sel: Sel, cx: &mut Context<Self>) -> Self {
         let subscription = cx.observe(&sel, |_, _, cx| cx.notify());
-        Self { doc, sel, focus: false, focus_handle: cx.focus_handle(), _subscription: subscription }
+        Self {
+            doc,
+            sel,
+            focus: false,
+            focus_handle: cx.focus_handle(),
+            _subscription: subscription,
+        }
     }
 }
 
@@ -149,7 +165,11 @@ impl Render for LayerGraph {
                                 p((cx_ + 21.0 * a.cos(), cy_ + 21.0 * a.sin()))
                             })
                             .collect();
-                        let color = if selected == Some(i) { colors.accent } else { colors.line };
+                        let color = if selected == Some(i) {
+                            colors.accent
+                        } else {
+                            colors.line
+                        };
                         stroke_polyline(window, &ring, 1.6, color);
                     }
                 },
@@ -164,7 +184,10 @@ impl Render for LayerGraph {
             let active = selected == Some(i);
             let sel = self.sel.clone();
             let color = color_of(set.color_of(i));
-            let dim = self.focus && selected.is_some() && !active && !set.collides(selected.unwrap_or(i), i);
+            let dim = self.focus
+                && selected.is_some()
+                && !active
+                && !set.collides(selected.unwrap_or(i), i);
             div()
                 .id(SharedString::from(format!("graph-node-{i}")))
                 .absolute()
@@ -180,7 +203,11 @@ impl Render for LayerGraph {
                 .cursor_pointer()
                 .bg(color.opacity(if dim { 0.35 } else { 1.0 }))
                 .border_2()
-                .border_color(if active { theme.foreground } else { theme.background })
+                .border_color(if active {
+                    theme.foreground
+                } else {
+                    theme.background
+                })
                 .shadow_sm()
                 .text_size(px(11.0))
                 .font_semibold()
@@ -195,8 +222,16 @@ impl Render for LayerGraph {
                         .w(px(NODE + 72.0))
                         .text_center()
                         .text_xs()
-                        .font_weight(if active { FontWeight::SEMIBOLD } else { FontWeight::NORMAL })
-                        .text_color(if dim { theme.muted_foreground } else { theme.foreground })
+                        .font_weight(if active {
+                            FontWeight::SEMIBOLD
+                        } else {
+                            FontWeight::NORMAL
+                        })
+                        .text_color(if dim {
+                            theme.muted_foreground
+                        } else {
+                            theme.foreground
+                        })
                         .truncate()
                         .child(set.layers[i].name.clone()),
                 )
@@ -222,7 +257,12 @@ impl Render for LayerGraph {
             div()
                 .flex_1()
                 .min_h_0()
-                .child(empty_message(IconName::Network, "No layers", "Add layers to see how they relate", cx))
+                .child(empty_message(
+                    IconName::Network,
+                    "No layers",
+                    "Add layers to see how they relate",
+                    cx,
+                ))
                 .into_any_element()
         } else {
             div()
@@ -241,7 +281,12 @@ impl Render for LayerGraph {
             .child(panel_header(
                 IconName::Network,
                 "Relationships",
-                Some(Tag::secondary().small().child(format!("{pair_count} colliding pairs")).into_any_element()),
+                Some(
+                    Tag::secondary()
+                        .small()
+                        .child(format!("{pair_count} colliding pairs"))
+                        .into_any_element(),
+                ),
                 cx,
             ))
             .child(
@@ -256,7 +301,10 @@ impl Render for LayerGraph {
                     .border_color(theme.border.opacity(0.6))
                     .child(focus_toggle)
                     .child(toolbar_divider(cx))
-                    .child(caption("A ring around a layer means it collides with itself.", cx))
+                    .child(caption(
+                        "A ring around a layer means it collides with itself.",
+                        cx,
+                    ))
                     .when(all_edges.iter().any(|e| e.one_sided), |bar| {
                         bar.child(Tag::warning().small().child("amber lines are one-sided"))
                     }),
@@ -273,9 +321,15 @@ mod tests {
     #[test]
     fn nodes_sit_on_a_ring_starting_at_the_top() {
         let (x, y) = node_position(0, 8);
-        assert!((x - 0.5).abs() < 1e-5 && y < 0.5, "the first node is at the top");
+        assert!(
+            (x - 0.5).abs() < 1e-5 && y < 0.5,
+            "the first node is at the top"
+        );
         let (x2, y2) = node_position(4, 8);
-        assert!((x2 - 0.5).abs() < 1e-5 && y2 > 0.5, "the opposite node is at the bottom");
+        assert!(
+            (x2 - 0.5).abs() < 1e-5 && y2 > 0.5,
+            "the opposite node is at the bottom"
+        );
         assert_eq!(node_position(0, 1), (0.5, 0.5));
         for i in 0..12 {
             let (x, y) = node_position(i, 12);
@@ -285,9 +339,16 @@ mod tests {
 
     #[test]
     fn edges_follow_the_matrix_and_flag_one_sided_pairs() {
-        let set = PRESETS.iter().find(|p| p.name == "Shooter").unwrap().build();
+        let set = PRESETS
+            .iter()
+            .find(|p| p.name == "Shooter")
+            .unwrap()
+            .build();
         let list = edges(&set);
-        let pairs = (0..set.len()).flat_map(|a| ((a + 1)..set.len()).map(move |b| (a, b))).filter(|&(a, b)| set.collides(a, b)).count();
+        let pairs = (0..set.len())
+            .flat_map(|a| ((a + 1)..set.len()).map(move |b| (a, b)))
+            .filter(|&(a, b)| set.collides(a, b))
+            .count();
         assert_eq!(list.len(), pairs);
         assert!(list.iter().all(|e| !e.one_sided));
 

@@ -59,7 +59,9 @@ const IDLE_SESSION: Duration = Duration::from_secs(10);
 const MAX_PENDING_EVENTS: usize = 10_000;
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 #[derive(Default)]
@@ -162,10 +164,7 @@ fn simulation_thread(shared: Arc<Shared>) {
     loop {
         let (parts, dt, handled) = {
             let mut inbox = lock(&shared.inbox);
-            while inbox.parts.is_empty()
-                && inbox.dt == 0.0
-                && !inbox.shutdown
-            {
+            while inbox.parts.is_empty() && inbox.dt == 0.0 && !inbox.shutdown {
                 inbox = shared
                     .wake
                     .wait(inbox)
@@ -208,9 +207,12 @@ fn simulation_thread(shared: Arc<Shared>) {
 
 fn publish(shared: &Shared, output: Output, seq: u64) {
     let mut outbox = lock(&shared.outbox);
-    outbox
-        .batches
-        .extend(output.batches.into_iter().map(|(name, batch)| (seq, name, batch)));
+    outbox.batches.extend(
+        output
+            .batches
+            .into_iter()
+            .map(|(name, batch)| (seq, name, batch)),
+    );
     outbox.events.extend(output.events);
     let excess = outbox.events.len().saturating_sub(MAX_PENDING_EVENTS);
     outbox.events.drain(..excess);
@@ -245,11 +247,20 @@ fn tick(
     sessions.retain(|&other, session| other == key || now - session.last_tick < IDLE_SESSION);
     let session = sessions.entry(key).or_insert_with(Session::spawn);
     session.last_tick = now;
-    if !session.events.as_ref().is_some_and(|(hub, _)| hub.ptr_eq(events)) {
+    if !session
+        .events
+        .as_ref()
+        .is_some_and(|(hub, _)| hub.ptr_eq(events))
+    {
         session.events = Some((events.clone(), physics_events::register_all(events)));
     }
 
-    let Session { shared, streams, events: hub, .. } = session;
+    let Session {
+        shared,
+        streams,
+        events: hub,
+        ..
+    } = session;
     let ids = hub.as_ref().map(|(_, ids)| ids);
     let (moved, rescan_all) = {
         profiling::profile_scope!("Physics::Moves");
@@ -462,15 +473,20 @@ mod tests {
 
     /// A component instance entity attached to `owner`.
     fn attach<T: Component>(world: &mut World, owner: Entity, value: T) -> Entity {
-        let instance =
-            attachments::spawn_instance(world, owner, NewInstance::new("test")).unwrap();
+        let instance = attachments::spawn_instance(world, owner, NewInstance::new("test")).unwrap();
         world.insert(instance, value);
         instance
     }
 
     fn object(world: &mut World, position: [f32; 3]) -> Entity {
         let e = world.spawn();
-        world.insert(e, Transform { position, ..Transform::default() });
+        world.insert(
+            e,
+            Transform {
+                position,
+                ..Transform::default()
+            },
+        );
         e
     }
 
@@ -510,9 +526,15 @@ mod tests {
 
         // Slab top at 0.5, box half-height 0.5: resting centre near 1.0.
         let rest = y(&world, crate_);
-        assert!((0.9..1.1).contains(&rest), "box rests on the slab, y = {rest}");
+        assert!(
+            (0.9..1.1).contains(&rest),
+            "box rests on the slab, y = {rest}"
+        );
         assert_eq!(world.get::<Transform>(ground).unwrap().position, [0.0; 3]);
-        let v = world.get::<RigidBodyComponent>(body).unwrap().linear_velocity;
+        let v = world
+            .get::<RigidBodyComponent>(body)
+            .unwrap()
+            .linear_velocity;
         assert!(v[1].abs() < 0.5, "settled: {v:?}");
         assert_eq!(simulated_counts(&world), (1, 2));
     }
@@ -546,12 +568,24 @@ mod tests {
         assert!(y(&world, owner) < 50.0);
 
         // Zero gravity: the body should now coast, not accelerate.
-        world.get_mut::<RigidBodyComponent>(body).unwrap().gravity_scale = 0.0;
+        world
+            .get_mut::<RigidBodyComponent>(body)
+            .unwrap()
+            .gravity_scale = 0.0;
         run(&mut world, &mut state, &hub, 0.1);
-        let v1 = world.get::<RigidBodyComponent>(body).unwrap().linear_velocity[1];
+        let v1 = world
+            .get::<RigidBodyComponent>(body)
+            .unwrap()
+            .linear_velocity[1];
         run(&mut world, &mut state, &hub, 0.5);
-        let v2 = world.get::<RigidBodyComponent>(body).unwrap().linear_velocity[1];
-        assert!((v1 - v2).abs() < 0.2, "no longer accelerating: {v1} -> {v2}");
+        let v2 = world
+            .get::<RigidBodyComponent>(body)
+            .unwrap()
+            .linear_velocity[1];
+        assert!(
+            (v1 - v2).abs() < 0.2,
+            "no longer accelerating: {v1} -> {v2}"
+        );
 
         // Teleporting the object moves the body there.
         world.get_mut::<Transform>(owner).unwrap().position = [7.0, 100.0, 0.0];
@@ -628,7 +662,11 @@ mod tests {
             },
         );
         run(&mut world, &mut state, &hub, 2.0);
-        assert_eq!(hits.load(Ordering::SeqCst), 1, "one collision_enter for the crate");
+        assert_eq!(
+            hits.load(Ordering::SeqCst),
+            1,
+            "one collision_enter for the crate"
+        );
     }
 
     #[test]
@@ -664,7 +702,10 @@ mod tests {
             move |event| log.lock().unwrap().push(event.fields[2].clone()),
         );
         run(&mut world, &mut state, &hub, 3.0);
-        assert_eq!(entered.lock().unwrap().as_slice(), [DynValue::U64(ball.bits())]);
+        assert_eq!(
+            entered.lock().unwrap().as_slice(),
+            [DynValue::U64(ball.bits())]
+        );
     }
 
     #[test]
@@ -700,7 +741,12 @@ mod tests {
         assert!(t[0] > 1.5, "walked: {t:?}");
         // Capsule 1.8 tall standing on a slab whose top is 0.5.
         assert!((1.3..1.6).contains(&t[1]), "stands on the ground: {t:?}");
-        assert!(world.get::<CharacterControllerComponent>(controller).unwrap().grounded);
+        assert!(
+            world
+                .get::<CharacterControllerComponent>(controller)
+                .unwrap()
+                .grounded
+        );
     }
 
     #[test]
@@ -733,9 +779,11 @@ mod tests {
         attach(&mut world, owner, RigidBodyComponent::default());
         tick_live_components(&mut world, &hub, 1.0 / 60.0, 1, &mut state);
         wait_idle(&world);
-        let name = lock(&SESSIONS)
-            .get(&key_of(&world))
-            .and_then(|s| s.thread.as_ref().map(|t| t.thread().name().map(str::to_owned)));
+        let name = lock(&SESSIONS).get(&key_of(&world)).and_then(|s| {
+            s.thread
+                .as_ref()
+                .map(|t| t.thread().name().map(str::to_owned))
+        });
         assert_eq!(name, Some(Some("Pulsar-Physics".to_owned())));
     }
 }

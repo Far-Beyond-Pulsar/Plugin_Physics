@@ -9,12 +9,14 @@
 use std::collections::HashMap;
 
 use engine_class_derive::{engine_class, register_world_component};
-use pulsar_scenedb::{component_id, Entity, World};
 use pulsar_reflection::Reflectable;
+use pulsar_scenedb::{component_id, Entity, World};
 use rapier3d::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::behavior::{read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx};
+use crate::behavior::{
+    read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx,
+};
 use crate::declare_events;
 use crate::math::{array, euler_degrees_from_quat, near, pose, vector};
 use crate::sim::Sim;

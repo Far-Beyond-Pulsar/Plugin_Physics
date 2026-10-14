@@ -67,7 +67,12 @@ mod tests {
                 .iter()
                 .filter(|e| e.supported_file_types.contains(&file_type.id))
                 .collect();
-            assert_eq!(handling.len(), 1, "{} should have one editor", file_type.display_name);
+            assert_eq!(
+                handling.len(),
+                1,
+                "{} should have one editor",
+                file_type.display_name
+            );
         }
         let mut ids: Vec<_> = editors.iter().map(|e| e.id.as_str().to_string()).collect();
         ids.sort();

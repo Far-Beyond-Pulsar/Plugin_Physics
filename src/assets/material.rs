@@ -36,8 +36,12 @@ pub enum CombineRule {
 }
 
 impl CombineRule {
-    pub const ALL: [CombineRule; 4] =
-        [CombineRule::Average, CombineRule::Min, CombineRule::Multiply, CombineRule::Max];
+    pub const ALL: [CombineRule; 4] = [
+        CombineRule::Average,
+        CombineRule::Min,
+        CombineRule::Multiply,
+        CombineRule::Max,
+    ];
 
     /// The name stored in the file.
     pub fn id(self) -> &'static str {
@@ -257,10 +261,18 @@ impl MaterialFix {
     pub fn apply(self, m: &mut PhysicsMaterial) {
         match self {
             MaterialFix::ClampFriction => {
-                m.friction = if m.friction.is_finite() { m.friction.max(0.0) } else { 0.4 };
+                m.friction = if m.friction.is_finite() {
+                    m.friction.max(0.0)
+                } else {
+                    0.4
+                };
             }
             MaterialFix::ClampRestitution => {
-                m.restitution = if m.restitution.is_finite() { m.restitution.clamp(0.0, 1.0) } else { 0.2 };
+                m.restitution = if m.restitution.is_finite() {
+                    m.restitution.clamp(0.0, 1.0)
+                } else {
+                    0.2
+                };
             }
             MaterialFix::ResetDensity => m.density = 1.0,
         }
@@ -276,8 +288,12 @@ impl PhysicsMaterial {
 
         if !self.friction.is_finite() || self.friction < 0.0 {
             push(
-                Issue::new(Severity::Error, "friction", "Friction must be a number that is 0 or more")
-                    .with_fix(MaterialFix::ClampFriction),
+                Issue::new(
+                    Severity::Error,
+                    "friction",
+                    "Friction must be a number that is 0 or more",
+                )
+                .with_fix(MaterialFix::ClampFriction),
             );
         } else if self.friction > 2.0 {
             push(Issue::new(
@@ -289,8 +305,12 @@ impl PhysicsMaterial {
 
         if !self.restitution.is_finite() || self.restitution < 0.0 {
             push(
-                Issue::new(Severity::Error, "restitution", "Restitution must be a number that is 0 or more")
-                    .with_fix(MaterialFix::ClampRestitution),
+                Issue::new(
+                    Severity::Error,
+                    "restitution",
+                    "Restitution must be a number that is 0 or more",
+                )
+                .with_fix(MaterialFix::ClampRestitution),
             );
         } else if self.restitution > 1.0 {
             push(
@@ -352,7 +372,8 @@ impl PhysicsMaterial {
     /// The coefficients a contact between `self` and `other` uses.
     pub fn contact_with(&self, other: &PhysicsMaterial) -> ContactResponse {
         let friction_rule = CombineRule::resolve(self.friction_combine, other.friction_combine);
-        let restitution_rule = CombineRule::resolve(self.restitution_combine, other.restitution_combine);
+        let restitution_rule =
+            CombineRule::resolve(self.restitution_combine, other.restitution_combine);
         ContactResponse {
             friction: friction_rule.apply(self.friction, other.friction),
             restitution: restitution_rule.apply(self.restitution, other.restitution),
@@ -393,7 +414,9 @@ fn number(map: &Map<String, Value>, key: &str, default: f32, notes: &mut Vec<Str
         None => default,
         Some(Value::Number(n)) => n.as_f64().map_or(default, |v| v as f32),
         Some(other) => {
-            notes.push(format!("`{key}` should be a number, found {other}; using {default}"));
+            notes.push(format!(
+                "`{key}` should be a number, found {other}; using {default}"
+            ));
             default
         }
     }
@@ -403,11 +426,15 @@ fn rule(map: &Map<String, Value>, key: &str, notes: &mut Vec<String>) -> Combine
     match map.get(key) {
         None => CombineRule::Average,
         Some(Value::String(text)) => CombineRule::parse(text).unwrap_or_else(|| {
-            notes.push(format!("`{key}` is `{text}`, which isn't a combine mode; using average"));
+            notes.push(format!(
+                "`{key}` is `{text}`, which isn't a combine mode; using average"
+            ));
             CombineRule::Average
         }),
         Some(other) => {
-            notes.push(format!("`{key}` should be a string, found {other}; using average"));
+            notes.push(format!(
+                "`{key}` should be a string, found {other}; using average"
+            ));
             CombineRule::Average
         }
     }
@@ -436,7 +463,8 @@ impl Asset for PhysicsMaterial {
         if text.trim().is_empty() {
             return Ok((Self::default(), Vec::new()));
         }
-        let value: Value = serde_json::from_str(text).map_err(|e| format!("not valid JSON: {e}"))?;
+        let value: Value =
+            serde_json::from_str(text).map_err(|e| format!("not valid JSON: {e}"))?;
         let Value::Object(map) = value else {
             return Err("expected a JSON object".to_string());
         };
@@ -446,11 +474,15 @@ impl Asset for PhysicsMaterial {
         let surface = match map.get("surface") {
             None => SurfaceType::Default,
             Some(Value::String(s)) => SurfaceType::parse(s).unwrap_or_else(|| {
-                notes.push(format!("`surface` is `{s}`, which isn't a known surface; using default"));
+                notes.push(format!(
+                    "`surface` is `{s}`, which isn't a known surface; using default"
+                ));
                 SurfaceType::Default
             }),
             Some(other) => {
-                notes.push(format!("`surface` should be a string, found {other}; using default"));
+                notes.push(format!(
+                    "`surface` should be a string, found {other}; using default"
+                ));
                 SurfaceType::Default
             }
         };
@@ -485,7 +517,10 @@ impl Asset for PhysicsMaterial {
         map.insert("friction".into(), json!(self.friction));
         map.insert("restitution".into(), json!(self.restitution));
         map.insert("friction_combine".into(), json!(self.friction_combine.id()));
-        map.insert("restitution_combine".into(), json!(self.restitution_combine.id()));
+        map.insert(
+            "restitution_combine".into(),
+            json!(self.restitution_combine.id()),
+        );
         map.insert("density".into(), json!(self.density));
         if self.surface != SurfaceType::Default {
             map.insert("surface".into(), json!(self.surface.id()));
@@ -533,7 +568,13 @@ impl BounceArc {
 /// The path of a ball dropped from `drop_height` metres onto a surface with
 /// effective restitution `e`, up to `max_bounces` legs or until a bounce
 /// peaks below `rest_height`.
-pub fn bounce_arcs(drop_height: f32, e: f32, gravity: f32, rest_height: f32, max_bounces: usize) -> Vec<BounceArc> {
+pub fn bounce_arcs(
+    drop_height: f32,
+    e: f32,
+    gravity: f32,
+    rest_height: f32,
+    max_bounces: usize,
+) -> Vec<BounceArc> {
     let drop_height = drop_height.max(0.0);
     let gravity = gravity.max(1e-3);
     let e = if e.is_finite() { e.max(0.0) } else { 0.0 };
@@ -542,7 +583,12 @@ pub fn bounce_arcs(drop_height: f32, e: f32, gravity: f32, rest_height: f32, max
         return arcs;
     }
     let fall_time = (2.0 * drop_height / gravity).sqrt();
-    arcs.push(BounceArc { start: 0.0, end: fall_time, peak: drop_height, drop: true });
+    arcs.push(BounceArc {
+        start: 0.0,
+        end: fall_time,
+        peak: drop_height,
+        drop: true,
+    });
 
     let mut time = fall_time;
     let mut speed = (2.0 * gravity * drop_height).sqrt();
@@ -553,7 +599,12 @@ pub fn bounce_arcs(drop_height: f32, e: f32, gravity: f32, rest_height: f32, max
             break;
         }
         let duration = 2.0 * speed / gravity;
-        arcs.push(BounceArc { start: time, end: time + duration, peak, drop: false });
+        arcs.push(BounceArc {
+            start: time,
+            end: time + duration,
+            peak,
+            drop: false,
+        });
         time += duration;
     }
     arcs
@@ -600,7 +651,11 @@ pub fn slope_state(mu: f32, angle_deg: f32, gravity: f32) -> SlopeState {
         angle_deg: angle_deg.clamp(0.0, 90.0),
         critical_deg: mu.atan().to_degrees(),
         slipping,
-        acceleration: if slipping { driving - max_friction } else { 0.0 },
+        acceleration: if slipping {
+            driving - max_friction
+        } else {
+            0.0
+        },
         driving,
         resisting,
         normal,
@@ -650,25 +705,177 @@ impl Preset {
 pub const PRESET_CATEGORIES: [&str; 4] = ["Engine", "Natural", "Man-made", "Special"];
 
 pub const PRESETS: &[Preset] = &[
-    Preset { name: "Engine default", category: "Engine", friction: 0.4, restitution: 0.2, density: 1.0, surface: SurfaceType::Default, note: "What an unauthored component uses." },
-    Preset { name: "Dirt", category: "Natural", friction: 0.6, restitution: 0.05, density: 1500.0, surface: SurfaceType::Dirt, note: "Packed earth: grippy and dead." },
-    Preset { name: "Sand", category: "Natural", friction: 0.5, restitution: 0.02, density: 1600.0, surface: SurfaceType::Sand, note: "Loose and absorbent." },
-    Preset { name: "Grass", category: "Natural", friction: 0.55, restitution: 0.05, density: 1100.0, surface: SurfaceType::Grass, note: "Turf over soil." },
-    Preset { name: "Stone", category: "Natural", friction: 0.65, restitution: 0.15, density: 2600.0, surface: SurfaceType::Stone, note: "Cut rock." },
-    Preset { name: "Ice", category: "Natural", friction: 0.03, restitution: 0.05, density: 920.0, surface: SurfaceType::Ice, note: "Almost frictionless." },
-    Preset { name: "Wood", category: "Natural", friction: 0.5, restitution: 0.25, density: 700.0, surface: SurfaceType::Wood, note: "Seasoned timber." },
-    Preset { name: "Flesh", category: "Natural", friction: 0.6, restitution: 0.05, density: 1000.0, surface: SurfaceType::Flesh, note: "Soft tissue." },
-    Preset { name: "Concrete", category: "Man-made", friction: 0.7, restitution: 0.1, density: 2400.0, surface: SurfaceType::Concrete, note: "Poured and cured." },
-    Preset { name: "Asphalt", category: "Man-made", friction: 0.8, restitution: 0.05, density: 2300.0, surface: SurfaceType::Concrete, note: "Road surface." },
-    Preset { name: "Steel", category: "Man-made", friction: 0.45, restitution: 0.2, density: 7850.0, surface: SurfaceType::Metal, note: "Structural steel." },
-    Preset { name: "Aluminium", category: "Man-made", friction: 0.4, restitution: 0.25, density: 2700.0, surface: SurfaceType::Metal, note: "Light alloy." },
-    Preset { name: "Glass", category: "Man-made", friction: 0.3, restitution: 0.5, density: 2500.0, surface: SurfaceType::Glass, note: "Smooth and brittle." },
-    Preset { name: "Plastic", category: "Man-made", friction: 0.35, restitution: 0.4, density: 1200.0, surface: SurfaceType::Plastic, note: "Hard polymer." },
-    Preset { name: "Rubber", category: "Man-made", friction: 1.0, restitution: 0.8, density: 1100.0, surface: SurfaceType::Rubber, note: "Grips and rebounds." },
-    Preset { name: "Cloth", category: "Man-made", friction: 0.7, restitution: 0.02, density: 400.0, surface: SurfaceType::Cloth, note: "Fabric and padding." },
-    Preset { name: "Bouncy ball", category: "Special", friction: 0.8, restitution: 0.95, density: 1000.0, surface: SurfaceType::Rubber, note: "A superball." },
-    Preset { name: "Frictionless", category: "Special", friction: 0.0, restitution: 0.0, density: 1000.0, surface: SurfaceType::Default, note: "Slides forever, never bounces. Useful for debugging." },
-    Preset { name: "Sticky", category: "Special", friction: 2.0, restitution: 0.0, density: 1000.0, surface: SurfaceType::Default, note: "Things stay where they land." },
+    Preset {
+        name: "Engine default",
+        category: "Engine",
+        friction: 0.4,
+        restitution: 0.2,
+        density: 1.0,
+        surface: SurfaceType::Default,
+        note: "What an unauthored component uses.",
+    },
+    Preset {
+        name: "Dirt",
+        category: "Natural",
+        friction: 0.6,
+        restitution: 0.05,
+        density: 1500.0,
+        surface: SurfaceType::Dirt,
+        note: "Packed earth: grippy and dead.",
+    },
+    Preset {
+        name: "Sand",
+        category: "Natural",
+        friction: 0.5,
+        restitution: 0.02,
+        density: 1600.0,
+        surface: SurfaceType::Sand,
+        note: "Loose and absorbent.",
+    },
+    Preset {
+        name: "Grass",
+        category: "Natural",
+        friction: 0.55,
+        restitution: 0.05,
+        density: 1100.0,
+        surface: SurfaceType::Grass,
+        note: "Turf over soil.",
+    },
+    Preset {
+        name: "Stone",
+        category: "Natural",
+        friction: 0.65,
+        restitution: 0.15,
+        density: 2600.0,
+        surface: SurfaceType::Stone,
+        note: "Cut rock.",
+    },
+    Preset {
+        name: "Ice",
+        category: "Natural",
+        friction: 0.03,
+        restitution: 0.05,
+        density: 920.0,
+        surface: SurfaceType::Ice,
+        note: "Almost frictionless.",
+    },
+    Preset {
+        name: "Wood",
+        category: "Natural",
+        friction: 0.5,
+        restitution: 0.25,
+        density: 700.0,
+        surface: SurfaceType::Wood,
+        note: "Seasoned timber.",
+    },
+    Preset {
+        name: "Flesh",
+        category: "Natural",
+        friction: 0.6,
+        restitution: 0.05,
+        density: 1000.0,
+        surface: SurfaceType::Flesh,
+        note: "Soft tissue.",
+    },
+    Preset {
+        name: "Concrete",
+        category: "Man-made",
+        friction: 0.7,
+        restitution: 0.1,
+        density: 2400.0,
+        surface: SurfaceType::Concrete,
+        note: "Poured and cured.",
+    },
+    Preset {
+        name: "Asphalt",
+        category: "Man-made",
+        friction: 0.8,
+        restitution: 0.05,
+        density: 2300.0,
+        surface: SurfaceType::Concrete,
+        note: "Road surface.",
+    },
+    Preset {
+        name: "Steel",
+        category: "Man-made",
+        friction: 0.45,
+        restitution: 0.2,
+        density: 7850.0,
+        surface: SurfaceType::Metal,
+        note: "Structural steel.",
+    },
+    Preset {
+        name: "Aluminium",
+        category: "Man-made",
+        friction: 0.4,
+        restitution: 0.25,
+        density: 2700.0,
+        surface: SurfaceType::Metal,
+        note: "Light alloy.",
+    },
+    Preset {
+        name: "Glass",
+        category: "Man-made",
+        friction: 0.3,
+        restitution: 0.5,
+        density: 2500.0,
+        surface: SurfaceType::Glass,
+        note: "Smooth and brittle.",
+    },
+    Preset {
+        name: "Plastic",
+        category: "Man-made",
+        friction: 0.35,
+        restitution: 0.4,
+        density: 1200.0,
+        surface: SurfaceType::Plastic,
+        note: "Hard polymer.",
+    },
+    Preset {
+        name: "Rubber",
+        category: "Man-made",
+        friction: 1.0,
+        restitution: 0.8,
+        density: 1100.0,
+        surface: SurfaceType::Rubber,
+        note: "Grips and rebounds.",
+    },
+    Preset {
+        name: "Cloth",
+        category: "Man-made",
+        friction: 0.7,
+        restitution: 0.02,
+        density: 400.0,
+        surface: SurfaceType::Cloth,
+        note: "Fabric and padding.",
+    },
+    Preset {
+        name: "Bouncy ball",
+        category: "Special",
+        friction: 0.8,
+        restitution: 0.95,
+        density: 1000.0,
+        surface: SurfaceType::Rubber,
+        note: "A superball.",
+    },
+    Preset {
+        name: "Frictionless",
+        category: "Special",
+        friction: 0.0,
+        restitution: 0.0,
+        density: 1000.0,
+        surface: SurfaceType::Default,
+        note: "Slides forever, never bounces. Useful for debugging.",
+    },
+    Preset {
+        name: "Sticky",
+        category: "Special",
+        friction: 2.0,
+        restitution: 0.0,
+        density: 1000.0,
+        surface: SurfaceType::Default,
+        note: "Things stay where they land.",
+    },
 ];
 
 /// The preset whose numbers `material` has, if any.
@@ -701,8 +908,16 @@ mod tests {
 
     #[test]
     fn contact_uses_the_dominant_rule_per_coefficient() {
-        let ice = PRESETS.iter().find(|p| p.name == "Ice").unwrap().to_material();
-        let mut rubber = PRESETS.iter().find(|p| p.name == "Rubber").unwrap().to_material();
+        let ice = PRESETS
+            .iter()
+            .find(|p| p.name == "Ice")
+            .unwrap()
+            .to_material();
+        let mut rubber = PRESETS
+            .iter()
+            .find(|p| p.name == "Rubber")
+            .unwrap()
+            .to_material();
         rubber.friction_combine = CombineRule::Max;
         let hit = ice.contact_with(&rubber);
         assert_eq!(hit.friction_rule, CombineRule::Max);
@@ -747,16 +962,31 @@ mod tests {
 
     #[test]
     fn validation_finds_problems_and_the_fixes_clear_them() {
-        let mut m = PhysicsMaterial { friction: -1.0, restitution: 1.5, density: 0.0, ..Default::default() };
+        let mut m = PhysicsMaterial {
+            friction: -1.0,
+            restitution: 1.5,
+            density: 0.0,
+            ..Default::default()
+        };
         let issues = m.validate();
-        assert_eq!(issues.iter().filter(|i| i.severity == Severity::Error).count(), 2);
+        assert_eq!(
+            issues
+                .iter()
+                .filter(|i| i.severity == Severity::Error)
+                .count(),
+            2
+        );
         assert!(issues.iter().any(|i| i.severity == Severity::Warning));
         for issue in &issues {
             if let Some(fix) = issue.fix {
                 fix.apply(&mut m);
             }
         }
-        assert!(m.validate().iter().all(|i| i.severity < Severity::Warning), "{:?}", m.validate());
+        assert!(
+            m.validate().iter().all(|i| i.severity < Severity::Warning),
+            "{:?}",
+            m.validate()
+        );
         assert!(PhysicsMaterial::default().validate().is_empty());
     }
 
@@ -765,7 +995,11 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for preset in PRESETS {
             assert!(seen.insert(preset.name), "duplicate preset {}", preset.name);
-            assert!(PRESET_CATEGORIES.contains(&preset.category), "{}", preset.name);
+            assert!(
+                PRESET_CATEGORIES.contains(&preset.category),
+                "{}",
+                preset.name
+            );
             let issues = preset.to_material().validate();
             assert!(
                 issues.iter().all(|i| i.severity < Severity::Warning),
@@ -775,7 +1009,10 @@ mod tests {
         }
         let rubber = PRESETS.iter().find(|p| p.name == "Rubber").unwrap();
         assert!(rubber.matches(&rubber.to_material()));
-        assert_eq!(matching_preset(&rubber.to_material()).unwrap().name, "Rubber");
+        assert_eq!(
+            matching_preset(&rubber.to_material()).unwrap().name,
+            "Rubber"
+        );
     }
 
     #[test]
@@ -786,13 +1023,18 @@ mod tests {
         assert!((arcs[1].peak - 2.0 * 0.25).abs() < 1e-4);
         assert!((arcs[2].peak - 2.0 * 0.0625).abs() < 1e-4);
         for pair in arcs.windows(2) {
-            assert!((pair[0].end - pair[1].start).abs() < 1e-5, "arcs are contiguous");
+            assert!(
+                (pair[0].end - pair[1].start).abs() < 1e-5,
+                "arcs are contiguous"
+            );
         }
         // The path is continuous: it touches the ground at each landing.
         for arc in &arcs {
             assert!(arc.height_at(arc.end, GRAVITY) < 1e-3);
         }
-        assert!(arcs[1].height_at(0.5 * (arcs[1].start + arcs[1].end), GRAVITY) > arcs[1].peak - 1e-4);
+        assert!(
+            arcs[1].height_at(0.5 * (arcs[1].start + arcs[1].end), GRAVITY) > arcs[1].peak - 1e-4
+        );
     }
 
     #[test]
@@ -801,7 +1043,10 @@ mod tests {
         assert_eq!(settle_time(1.0, 1.0, GRAVITY), None);
         let finite = settle_time(1.0, 0.5, GRAVITY).unwrap();
         let summed: f32 = bounce_arcs(1.0, 0.5, GRAVITY, 1e-7, 64).last().unwrap().end;
-        assert!((finite - summed).abs() / finite < 0.01, "{finite} vs {summed}");
+        assert!(
+            (finite - summed).abs() / finite < 0.01,
+            "{finite} vs {summed}"
+        );
     }
 
     #[test]
@@ -822,11 +1067,23 @@ mod tests {
 
     #[test]
     fn masses_follow_density() {
-        let steel = PRESETS.iter().find(|p| p.name == "Steel").unwrap().to_material();
+        let steel = PRESETS
+            .iter()
+            .find(|p| p.name == "Steel")
+            .unwrap()
+            .to_material();
         assert_eq!(steel.box_mass([1.0, 1.0, 1.0]), 7850.0);
         assert!(!steel.floats());
-        assert!(PRESETS.iter().find(|p| p.name == "Wood").unwrap().to_material().floats());
-        let ball = PhysicsMaterial { density: 1000.0, ..Default::default() };
+        assert!(PRESETS
+            .iter()
+            .find(|p| p.name == "Wood")
+            .unwrap()
+            .to_material()
+            .floats());
+        let ball = PhysicsMaterial {
+            density: 1000.0,
+            ..Default::default()
+        };
         assert!((ball.sphere_mass(0.5) - 523.6).abs() < 0.1);
     }
 }

@@ -116,10 +116,10 @@ impl<A: Asset> Document<A> {
     }
 
     pub fn file_name(&self) -> String {
-        self.path
-            .as_ref()
-            .and_then(|p| p.file_stem())
-            .map_or_else(|| format!("New {}", A::KIND), |n| n.to_string_lossy().into_owned())
+        self.path.as_ref().and_then(|p| p.file_stem()).map_or_else(
+            || format!("New {}", A::KIND),
+            |n| n.to_string_lossy().into_owned(),
+        )
     }
 
     pub fn load_notes(&self) -> &[String] {
@@ -187,7 +187,12 @@ impl<A: Asset> Document<A> {
             return;
         }
         self.status = None;
-        lock(&self.history).push(AssetEdit { other: before, label, key: merge_key, at: Instant::now() });
+        lock(&self.history).push(AssetEdit {
+            other: before,
+            label,
+            key: merge_key,
+            at: Instant::now(),
+        });
         cx.notify();
     }
 
@@ -240,7 +245,9 @@ impl<A: Asset> Document<A> {
     // ── Files ──────────────────────────────────────────────────────────────
 
     pub fn save(&mut self, cx: &mut Context<Self>) {
-        let Some(path) = self.path.clone() else { return };
+        let Some(path) = self.path.clone() else {
+            return;
+        };
         if self.unreadable.is_some() {
             return;
         }
@@ -285,7 +292,12 @@ mod tests {
         let push = |asset: &mut PhysicsMaterial, key: Option<&'static str>, value: f32| {
             let before = asset.clone();
             asset.friction = value;
-            lock(&history).push(AssetEdit { other: before, label: "friction", key, at: Instant::now() });
+            lock(&history).push(AssetEdit {
+                other: before,
+                label: "friction",
+                key,
+                at: Instant::now(),
+            });
         };
         push(&mut asset, Some("friction"), 0.5);
         push(&mut asset, Some("friction"), 0.6);
@@ -325,7 +337,10 @@ mod tests {
             true
         });
         assert!(undone.is_some());
-        assert_eq!(asset.friction, 0.4, "undo restores the state before the drag");
+        assert_eq!(
+            asset.friction, 0.4,
+            "undo restores the state before the drag"
+        );
         let redone = lock(&history).redo(|edit| {
             std::mem::swap(&mut asset, &mut edit.other);
             true
@@ -348,8 +363,14 @@ mod tests {
         std::fs::write(&broken_path, "{ definitely not json").unwrap();
         let broken = Document::<PhysicsMaterial>::open(Some(broken_path.clone()));
         assert!(broken.unreadable().is_some());
-        assert!(!broken.can_save(), "must not overwrite a file it couldn't read");
-        assert_eq!(std::fs::read_to_string(&broken_path).unwrap(), "{ definitely not json");
+        assert!(
+            !broken.can_save(),
+            "must not overwrite a file it couldn't read"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&broken_path).unwrap(),
+            "{ definitely not json"
+        );
 
         let repaired = dir.join("repaired.physmat");
         std::fs::write(&repaired, r#"{ "friction": "oops", "density": 5 }"#).unwrap();

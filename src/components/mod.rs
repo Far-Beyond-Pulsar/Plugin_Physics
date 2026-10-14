@@ -10,14 +10,19 @@ mod force_field;
 mod joint;
 mod rigid_body;
 
-pub use character_controller::{AIRBORNE, CHARACTER_CONTROLLER_CLASS_NAME, CharacterControllerComponent, GROUNDED};
-pub use collider::{
-    COLLIDER_CLASS_NAME, COLLISION_ENTER, COLLISION_EXIT, ColliderAxis, ColliderComponent,
-    ColliderShape, ColliderShapeData, TRIGGER_ENTER, TRIGGER_EXIT,
+pub use character_controller::{
+    CharacterControllerComponent, AIRBORNE, CHARACTER_CONTROLLER_CLASS_NAME, GROUNDED,
 };
-pub use force_field::{BODY_ENTERED, BODY_EXITED, FORCE_FIELD_CLASS_NAME, FalloffMode, ForceFieldComponent, ForceFieldKind};
-pub use joint::{JOINT_BROKEN, JOINT_CLASS_NAME, JointComponent, JointKind};
-pub use rigid_body::{BodyType, RIGID_BODY_CLASS_NAME, RigidBodyComponent, SLEEP, WAKE};
+pub use collider::{
+    ColliderAxis, ColliderComponent, ColliderShape, ColliderShapeData, COLLIDER_CLASS_NAME,
+    COLLISION_ENTER, COLLISION_EXIT, TRIGGER_ENTER, TRIGGER_EXIT,
+};
+pub use force_field::{
+    FalloffMode, ForceFieldComponent, ForceFieldKind, BODY_ENTERED, BODY_EXITED,
+    FORCE_FIELD_CLASS_NAME,
+};
+pub use joint::{JointComponent, JointKind, JOINT_BROKEN, JOINT_CLASS_NAME};
+pub use rigid_body::{BodyType, RigidBodyComponent, RIGID_BODY_CLASS_NAME, SLEEP, WAKE};
 
 use plugin_editor_api::{ComponentDefinition, ComponentFactory};
 use pulsar_reflection::EngineClass;
@@ -67,13 +72,19 @@ pub fn definitions() -> Vec<ComponentDefinition> {
 /// Default-instance factories keyed by class name.
 pub fn factories() -> Vec<(String, ComponentFactory)> {
     vec![
-        (RIGID_BODY_CLASS_NAME.into(), factory::<RigidBodyComponent>()),
+        (
+            RIGID_BODY_CLASS_NAME.into(),
+            factory::<RigidBodyComponent>(),
+        ),
         (COLLIDER_CLASS_NAME.into(), factory::<ColliderComponent>()),
         (JOINT_CLASS_NAME.into(), factory::<JointComponent>()),
         (
             CHARACTER_CONTROLLER_CLASS_NAME.into(),
             factory::<CharacterControllerComponent>(),
         ),
-        (FORCE_FIELD_CLASS_NAME.into(), factory::<ForceFieldComponent>()),
+        (
+            FORCE_FIELD_CLASS_NAME.into(),
+            factory::<ForceFieldComponent>(),
+        ),
     ]
 }

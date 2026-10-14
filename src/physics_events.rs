@@ -141,7 +141,10 @@ pub fn publish(hub: &EventHub, ids: &EventIds, event: &PhysEvent) {
         DynValue::U64(event.component.bits()),
         DynValue::U64(event.other.map_or(0, |e| e.bits())),
     ];
-    if let Err(error) = hub.publish_dyn(Channel::Entity(event.owner.bits()), DynEvent::new(id, fields)) {
+    if let Err(error) = hub.publish_dyn(
+        Channel::Entity(event.owner.bits()),
+        DynEvent::new(id, fields),
+    ) {
         tracing::warn!(event = %event.spec.qualified_name(), %error, "physics event was refused");
     }
 }

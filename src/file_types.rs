@@ -30,7 +30,7 @@ pub fn file_types() -> Vec<FileTypeDefinition> {
             default_content: json!({
                 "version": 1,
                 "friction": 0.4,
-                "restitution": 0.2,   
+                "restitution": 0.2,
                 "friction_combine": "average",
                 "restitution_combine": "average",
                 "density": 1.0,

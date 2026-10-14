@@ -14,7 +14,9 @@ use ui::{h_flex, v_flex, ActiveTheme, Disableable, Icon, IconName, Sizable, Styl
 
 use crate::assets::layers::MAX_LAYERS;
 use crate::assets::Severity;
-use crate::editors::common::chrome::{color_of, empty_message, panel_header, severity_color, severity_icon, swatch, MONO};
+use crate::editors::common::chrome::{
+    color_of, empty_message, panel_header, severity_color, severity_icon, swatch, MONO,
+};
 use crate::editors::common::panel::dock_panel;
 
 use super::state::{add_layer, duplicate_layer, move_layer, remove_layer, Doc, Sel};
@@ -40,7 +42,13 @@ impl LayersList {
             }),
             cx.observe(&sel, |_, _, cx| cx.notify()),
         ];
-        Self { doc, sel, search, focus_handle: cx.focus_handle(), _subscriptions: subscriptions }
+        Self {
+            doc,
+            sel,
+            search,
+            focus_handle: cx.focus_handle(),
+            _subscriptions: subscriptions,
+        }
     }
 
     /// Up / Down select, Delete removes, Ctrl+D duplicates, Alt+Up/Down reorders.
@@ -55,9 +63,15 @@ impl LayersList {
             "up" | "down" => {
                 let down = event.keystroke.key == "down";
                 match (current, mods.alt) {
-                    (Some(i), true) => move_layer(&self.doc, &self.sel, i, if down { 1 } else { -1 }, cx),
+                    (Some(i), true) => {
+                        move_layer(&self.doc, &self.sel, i, if down { 1 } else { -1 }, cx)
+                    }
                     (Some(i), false) => {
-                        let next = if down { (i + 1).min(len - 1) } else { i.saturating_sub(1) };
+                        let next = if down {
+                            (i + 1).min(len - 1)
+                        } else {
+                            i.saturating_sub(1)
+                        };
                         self.sel.update(cx, |s, cx| s.select(Some(next), cx));
                     }
                     (None, _) => self.sel.update(cx, |s, cx| s.select(Some(0), cx)),
@@ -94,12 +108,25 @@ impl Render for LayersList {
             .map(|i| {
                 let layer = &set.layers[i];
                 let active = selected == Some(i);
-                let worst = issues.iter().filter(|x| x.subject == layer.name).map(|x| x.severity).max();
+                let worst = issues
+                    .iter()
+                    .filter(|x| x.subject == layer.name)
+                    .map(|x| x.severity)
+                    .max();
                 let count = set.collision_count(i);
-                let (select_sel, up_sel, down_sel, dup_sel, del_sel) =
-                    (self.sel.clone(), self.sel.clone(), self.sel.clone(), self.sel.clone(), self.sel.clone());
-                let (up_doc, down_doc, dup_doc, del_doc) =
-                    (self.doc.clone(), self.doc.clone(), self.doc.clone(), self.doc.clone());
+                let (select_sel, up_sel, down_sel, dup_sel, del_sel) = (
+                    self.sel.clone(),
+                    self.sel.clone(),
+                    self.sel.clone(),
+                    self.sel.clone(),
+                    self.sel.clone(),
+                );
+                let (up_doc, down_doc, dup_doc, del_doc) = (
+                    self.doc.clone(),
+                    self.doc.clone(),
+                    self.doc.clone(),
+                    self.doc.clone(),
+                );
                 let group: SharedString = format!("layer-row-{i}").into();
                 let focus = self.focus_handle.clone();
 
@@ -113,10 +140,22 @@ impl Render for LayersList {
                     .gap_2()
                     .items_center()
                     .cursor_pointer()
-                    .bg(if active { theme.list_active } else { theme.transparent })
+                    .bg(if active {
+                        theme.list_active
+                    } else {
+                        theme.transparent
+                    })
                     .hover(|s| s.bg(theme.list_hover))
                     .when(active, |row| {
-                        row.child(div().absolute().left_0().top_0().bottom_0().w(px(3.0)).bg(theme.primary))
+                        row.child(
+                            div()
+                                .absolute()
+                                .left_0()
+                                .top_0()
+                                .bottom_0()
+                                .w(px(3.0))
+                                .bg(theme.primary),
+                        )
                     })
                     .on_click(move |_, window, cx| {
                         // Focus the list so the arrow keys, Del and Ctrl+D work.
@@ -138,12 +177,22 @@ impl Render for LayersList {
                             .min_w_0()
                             .truncate()
                             .text_sm()
-                            .font_weight(if active { FontWeight::SEMIBOLD } else { FontWeight::NORMAL })
+                            .font_weight(if active {
+                                FontWeight::SEMIBOLD
+                            } else {
+                                FontWeight::NORMAL
+                            })
                             .text_color(theme.foreground)
-                            .child(if layer.name.is_empty() { "(unnamed)".to_string() } else { layer.name.clone() }),
+                            .child(if layer.name.is_empty() {
+                                "(unnamed)".to_string()
+                            } else {
+                                layer.name.clone()
+                            }),
                     )
                     .children(worst.filter(|w| *w >= Severity::Warning).map(|w| {
-                        Icon::new(severity_icon(w)).size(px(12.0)).text_color(severity_color(w, cx))
+                        Icon::new(severity_icon(w))
+                            .size(px(12.0))
+                            .text_color(severity_color(w, cx))
                     }))
                     .child(
                         h_flex()
@@ -157,7 +206,9 @@ impl Render for LayersList {
                                     .ghost()
                                     .xsmall()
                                     .tooltip("Move up (Alt+Up)")
-                                    .on_click(move |_, _, cx| move_layer(&up_doc, &up_sel, i, -1, cx)),
+                                    .on_click(move |_, _, cx| {
+                                        move_layer(&up_doc, &up_sel, i, -1, cx)
+                                    }),
                             )
                             .child(
                                 Button::new(SharedString::from(format!("layer-down-{i}")))
@@ -165,7 +216,9 @@ impl Render for LayersList {
                                     .ghost()
                                     .xsmall()
                                     .tooltip("Move down (Alt+Down)")
-                                    .on_click(move |_, _, cx| move_layer(&down_doc, &down_sel, i, 1, cx)),
+                                    .on_click(move |_, _, cx| {
+                                        move_layer(&down_doc, &down_sel, i, 1, cx)
+                                    }),
                             )
                             .child(
                                 Button::new(SharedString::from(format!("layer-dup-{i}")))
@@ -173,7 +226,9 @@ impl Render for LayersList {
                                     .ghost()
                                     .xsmall()
                                     .tooltip("Duplicate (Ctrl+D)")
-                                    .on_click(move |_, _, cx| duplicate_layer(&dup_doc, &dup_sel, i, cx)),
+                                    .on_click(move |_, _, cx| {
+                                        duplicate_layer(&dup_doc, &dup_sel, i, cx)
+                                    }),
                             )
                             .child(
                                 Button::new(SharedString::from(format!("layer-del-{i}")))
@@ -181,7 +236,9 @@ impl Render for LayersList {
                                     .ghost()
                                     .xsmall()
                                     .tooltip("Delete (Del)")
-                                    .on_click(move |_, _, cx| remove_layer(&del_doc, &del_sel, i, cx)),
+                                    .on_click(move |_, _, cx| {
+                                        remove_layer(&del_doc, &del_sel, i, cx)
+                                    }),
                             ),
                     )
                     .child(
@@ -193,7 +250,10 @@ impl Render for LayersList {
                             .text_color(theme.muted_foreground)
                             .tooltip({
                                 move |window, cx| {
-                                    ui::tooltip::Tooltip::new(format!("Collides with {count} layer(s)")).build(window, cx)
+                                    ui::tooltip::Tooltip::new(format!(
+                                        "Collides with {count} layer(s)"
+                                    ))
+                                    .build(window, cx)
                                 }
                             })
                             .child(count.to_string()),
@@ -207,11 +267,18 @@ impl Render for LayersList {
 
         let body = if rows.is_empty() {
             let (title, hint) = if len == 0 {
-                ("No layers", "Add a layer to start building the collision matrix")
+                (
+                    "No layers",
+                    "Add a layer to start building the collision matrix",
+                )
             } else {
                 ("No matches", "No layer name contains that text")
             };
-            div().flex_1().min_h_0().child(empty_message(IconName::List, title, hint, cx)).into_any_element()
+            div()
+                .flex_1()
+                .min_h_0()
+                .child(empty_message(IconName::List, title, hint, cx))
+                .into_any_element()
         } else {
             v_flex()
                 .id("layers-scroll")
@@ -234,9 +301,13 @@ impl Render for LayersList {
                 "Layers",
                 Some(
                     if at_limit {
-                        Tag::warning().small().child(format!("{len} / {MAX_LAYERS}"))
+                        Tag::warning()
+                            .small()
+                            .child(format!("{len} / {MAX_LAYERS}"))
                     } else {
-                        Tag::secondary().small().child(format!("{len} / {MAX_LAYERS}"))
+                        Tag::secondary()
+                            .small()
+                            .child(format!("{len} / {MAX_LAYERS}"))
                     }
                     .into_any_element(),
                 ),
@@ -252,11 +323,15 @@ impl Render for LayersList {
                     .items_center()
                     .border_b_1()
                     .border_color(theme.border.opacity(0.6))
-                    .child(div().flex_1().min_w_0().child(
-                        TextInput::new(&self.search).small().cleanable().prefix(
-                            Icon::new(IconName::Search).size_3p5().text_color(theme.muted_foreground),
+                    .child(
+                        div().flex_1().min_w_0().child(
+                            TextInput::new(&self.search).small().cleanable().prefix(
+                                Icon::new(IconName::Search)
+                                    .size_3p5()
+                                    .text_color(theme.muted_foreground),
+                            ),
                         ),
-                    ))
+                    )
                     .child(
                         Button::new("layers-add")
                             .icon(IconName::Plus)
@@ -264,7 +339,11 @@ impl Render for LayersList {
                             .primary()
                             .small()
                             .disabled(at_limit)
-                            .tooltip(if at_limit { "The engine's collision groups hold 32 layers" } else { "Add a layer" })
+                            .tooltip(if at_limit {
+                                "The engine's collision groups hold 32 layers"
+                            } else {
+                                "Add a layer"
+                            })
                             .on_click(move |_, _, cx| add_layer(&add_doc, &add_sel, cx)),
                     ),
             )

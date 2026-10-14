@@ -31,7 +31,11 @@ pub struct MaterialProperties {
     _subscriptions: Vec<Subscription>,
 }
 
-dock_panel!(MaterialProperties, "physics-material-properties", "Properties");
+dock_panel!(
+    MaterialProperties,
+    "physics-material-properties",
+    "Properties"
+);
 
 impl MaterialProperties {
     pub fn new(doc: Doc, window: &mut Window, cx: &mut Context<Self>) -> Self {
@@ -99,7 +103,9 @@ impl MaterialProperties {
                     let text = input.read(cx).value().to_string();
                     if d.read(cx).asset().description != text {
                         d.update(cx, |d, cx| {
-                            d.edit("Edit description", Some("description"), cx, |m| m.description = text)
+                            d.edit("Edit description", Some("description"), cx, |m| {
+                                m.description = text
+                            })
                         });
                     }
                 }
@@ -157,21 +163,18 @@ impl MaterialProperties {
 
         let chips = SurfaceType::ALL.map(|surface| {
             let doc = self.doc.clone();
-            h_flex()
-                .gap_1()
-                .items_center()
-                .child(
-                    Button::new(SharedString::from(format!("surface-{}", surface.id())))
-                        .label(surface.label())
-                        .ghost()
-                        .xsmall()
-                        .selected(surface == m.surface)
-                        .on_click(move |_, _, cx| {
-                            doc.update(cx, |d, cx| {
-                                d.edit("Change surface type", None, cx, |m| m.surface = surface)
-                            });
-                        }),
-                )
+            h_flex().gap_1().items_center().child(
+                Button::new(SharedString::from(format!("surface-{}", surface.id())))
+                    .label(surface.label())
+                    .ghost()
+                    .xsmall()
+                    .selected(surface == m.surface)
+                    .on_click(move |_, _, cx| {
+                        doc.update(cx, |d, cx| {
+                            d.edit("Change surface type", None, cx, |m| m.surface = surface)
+                        });
+                    }),
+            )
         });
 
         v_flex()
@@ -197,34 +200,45 @@ impl MaterialProperties {
                                     .truncate()
                                     .child(doc.file_name()),
                             )
-                            .child(
-                                div()
-                                    .text_xs()
-                                    .text_color(theme.muted_foreground)
-                                    .child(preset.map_or_else(
-                                        || format!("{} surface", m.surface.label()),
-                                        |p| format!("Matches the {} preset", p.name),
-                                    )),
-                            ),
+                            .child(div().text_xs().text_color(theme.muted_foreground).child(
+                                preset.map_or_else(
+                                    || format!("{} surface", m.surface.label()),
+                                    |p| format!("Matches the {} preset", p.name),
+                                ),
+                            )),
                     ),
             )
             .child(
                 v_flex()
                     .gap_1()
-                    .child(div().text_xs().text_color(theme.muted_foreground).child("Surface type"))
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(theme.muted_foreground)
+                            .child("Surface type"),
+                    )
                     .child(h_flex().gap_0p5().flex_wrap().children(chips)),
             )
             .child(
                 v_flex()
                     .gap_1()
-                    .child(div().text_xs().text_color(theme.muted_foreground).child("Notes"))
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(theme.muted_foreground)
+                            .child("Notes"),
+                    )
                     .child(TextInput::new(&self.description).small()),
             )
     }
 
     fn render_density_hint(&self, m: &PhysicsMaterial, cx: &App) -> impl IntoElement {
         let theme = cx.theme();
-        let relative = if m.density > 0.0 { m.density / WATER_DENSITY } else { 0.0 };
+        let relative = if m.density > 0.0 {
+            m.density / WATER_DENSITY
+        } else {
+            0.0
+        };
         h_flex()
             .gap_2()
             .items_center()
@@ -258,13 +272,18 @@ impl MaterialProperties {
             .enumerate()
             .map(|(i, issue)| {
                 let doc = doc.clone();
-                let fixes = issue.fix.map(|f| vec![(f.label().to_string(), f)]).unwrap_or_default();
+                let fixes = issue
+                    .fix
+                    .map(|f| vec![(f.label().to_string(), f)])
+                    .unwrap_or_default();
                 issue_row(
                     SharedString::from(format!("material-fix-{i}")),
                     issue,
                     fixes,
                     move |fix, _, cx| {
-                        doc.update(cx, |d, cx| d.edit("Fix material", None, cx, |m| fix.apply(m)));
+                        doc.update(cx, |d, cx| {
+                            d.edit("Fix material", None, cx, |m| fix.apply(m))
+                        });
                     },
                     cx,
                 )
@@ -289,24 +308,42 @@ impl Render for MaterialProperties {
         self.friction.sync(m.friction, window, cx);
         self.restitution.sync(m.restitution, window, cx);
         self.density.sync(m.density, window, cx);
-        let focused = self.description.read(cx).focus_handle(cx).contains_focused(window, cx);
+        let focused = self
+            .description
+            .read(cx)
+            .focus_handle(cx)
+            .contains_focused(window, cx);
         if !focused && self.description.read(cx).value().as_ref() != m.description.as_str() {
             let text = m.description.clone();
-            self.description.update(cx, |i, cx| i.set_value(text, window, cx));
+            self.description
+                .update(cx, |i, cx| i.set_value(text, window, cx));
         }
 
         let issues = m.validate();
         let worst = issues.iter().map(|i| i.severity).max();
         let badge = match worst {
-            Some(Severity::Error) => Some(Tag::danger().small().child(format!("{} issues", issues.len()))),
-            Some(Severity::Warning) => Some(Tag::warning().small().child(format!("{} issues", issues.len()))),
-            Some(Severity::Info) => Some(Tag::info().small().child(format!("{} notes", issues.len()))),
+            Some(Severity::Error) => Some(
+                Tag::danger()
+                    .small()
+                    .child(format!("{} issues", issues.len())),
+            ),
+            Some(Severity::Warning) => Some(
+                Tag::warning()
+                    .small()
+                    .child(format!("{} issues", issues.len())),
+            ),
+            Some(Severity::Info) => {
+                Some(Tag::info().small().child(format!("{} notes", issues.len())))
+            }
             None => None,
         };
 
         let friction_section = section(
             "Friction",
-            Some("How strongly surfaces grip each other. 0 is ice, around 1 is rubber on asphalt.".into()),
+            Some(
+                "How strongly surfaces grip each other. 0 is ice, around 1 is rubber on asphalt."
+                    .into(),
+            ),
             v_flex()
                 .gap_2()
                 .child(self.friction.render(false, cx))
@@ -349,7 +386,12 @@ impl Render for MaterialProperties {
             .id("material-properties")
             .size_full()
             .bg(theme.sidebar)
-            .child(panel_header(IconName::Settings, "Material", badge.map(|b| b.into_any_element()), cx))
+            .child(panel_header(
+                IconName::Settings,
+                "Material",
+                badge.map(|b| b.into_any_element()),
+                cx,
+            ))
             .child(
                 v_flex()
                     .id("material-properties-scroll")

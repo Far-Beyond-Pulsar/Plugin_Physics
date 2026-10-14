@@ -7,7 +7,9 @@ use ui::scroll::ScrollbarAxis;
 use ui::tag::Tag;
 use ui::{h_flex, v_flex, ActiveTheme, Icon, IconName, Sizable, StyledExt};
 
-use crate::assets::material::{matching_preset, PhysicsMaterial, Preset, PRESETS, PRESET_CATEGORIES};
+use crate::assets::material::{
+    matching_preset, PhysicsMaterial, Preset, PRESETS, PRESET_CATEGORIES,
+};
 use crate::editors::common::chrome::{color_of, empty_message, panel_header, swatch, MONO};
 use crate::editors::common::document::Document;
 use crate::editors::common::panel::dock_panel;
@@ -31,7 +33,8 @@ pub fn apply_preset(material: &mut PhysicsMaterial, preset: &Preset) {
     material.restitution = preset.restitution;
     material.density = preset.density;
     material.surface = preset.surface;
-    let notes_are_ours = material.description.is_empty() || PRESETS.iter().any(|p| p.note == material.description);
+    let notes_are_ours =
+        material.description.is_empty() || PRESETS.iter().any(|p| p.note == material.description);
     if notes_are_ours {
         material.description = preset.note.to_string();
     }
@@ -40,12 +43,21 @@ pub fn apply_preset(material: &mut PhysicsMaterial, preset: &Preset) {
 impl PresetsPanel {
     pub fn new(doc: Doc, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let search = cx.new(|cx| InputState::new(window, cx).placeholder("Search presets…"));
-        let subscription = cx.subscribe_in(&search, window, |_this, _input, event: &InputEvent, _w, cx| {
-            if matches!(event, InputEvent::Change) {
-                cx.notify();
-            }
-        });
-        Self { doc, search, focus_handle: cx.focus_handle(), _subscription: subscription }
+        let subscription = cx.subscribe_in(
+            &search,
+            window,
+            |_this, _input, event: &InputEvent, _w, cx| {
+                if matches!(event, InputEvent::Change) {
+                    cx.notify();
+                }
+            },
+        );
+        Self {
+            doc,
+            search,
+            focus_handle: cx.focus_handle(),
+            _subscription: subscription,
+        }
     }
 
     fn row(&self, preset: &'static Preset, active: bool, cx: &App) -> impl IntoElement {
@@ -60,7 +72,11 @@ impl PresetsPanel {
             .gap_2()
             .items_center()
             .cursor_pointer()
-            .bg(if active { theme.list_active } else { theme.transparent })
+            .bg(if active {
+                theme.list_active
+            } else {
+                theme.transparent
+            })
             .hover(|s| s.bg(theme.list_hover))
             .tooltip({
                 let note = preset.note;
@@ -90,7 +106,11 @@ impl PresetsPanel {
                     .child(
                         div()
                             .text_sm()
-                            .font_weight(if active { FontWeight::SEMIBOLD } else { FontWeight::NORMAL })
+                            .font_weight(if active {
+                                FontWeight::SEMIBOLD
+                            } else {
+                                FontWeight::NORMAL
+                            })
                             .text_color(theme.foreground)
                             .truncate()
                             .child(preset.name),
@@ -107,7 +127,11 @@ impl PresetsPanel {
                     ),
             )
             .when(active, |row| {
-                row.child(Icon::new(IconName::Check).size(px(13.0)).text_color(theme.primary))
+                row.child(
+                    Icon::new(IconName::Check)
+                        .size(px(13.0))
+                        .text_color(theme.primary),
+                )
             })
     }
 }
@@ -124,25 +148,24 @@ impl Render for PresetsPanel {
             let presets: Vec<&'static Preset> = PRESETS
                 .iter()
                 .filter(|p| p.category == category)
-                .filter(|p| query.is_empty() || p.name.to_lowercase().contains(&query) || p.surface.id().contains(&query))
+                .filter(|p| {
+                    query.is_empty()
+                        || p.name.to_lowercase().contains(&query)
+                        || p.surface.id().contains(&query)
+                })
                 .collect();
             if presets.is_empty() {
                 continue;
             }
             shown += presets.len();
             list = list.child(
-                h_flex()
-                    .w_full()
-                    .px_3()
-                    .pt_2p5()
-                    .pb_1()
-                    .child(
-                        div()
-                            .text_size(px(10.5))
-                            .font_semibold()
-                            .text_color(theme.muted_foreground)
-                            .child(category.to_uppercase()),
-                    ),
+                h_flex().w_full().px_3().pt_2p5().pb_1().child(
+                    div()
+                        .text_size(px(10.5))
+                        .font_semibold()
+                        .text_color(theme.muted_foreground)
+                        .child(category.to_uppercase()),
+                ),
             );
             for preset in presets {
                 let active = current.is_some_and(|c| std::ptr::eq(c, preset));
@@ -154,7 +177,12 @@ impl Render for PresetsPanel {
             div()
                 .flex_1()
                 .min_h_0()
-                .child(empty_message(IconName::Search, "No presets match", "Try a surface name such as wood or metal", cx))
+                .child(empty_message(
+                    IconName::Search,
+                    "No presets match",
+                    "Try a surface name such as wood or metal",
+                    cx,
+                ))
                 .into_any_element()
         } else {
             v_flex()
@@ -172,7 +200,13 @@ impl Render for PresetsPanel {
             .child(panel_header(
                 IconName::Droplet,
                 "Presets",
-                Some(Tag::secondary().small().rounded_full().child(PRESETS.len().to_string()).into_any_element()),
+                Some(
+                    Tag::secondary()
+                        .small()
+                        .rounded_full()
+                        .child(PRESETS.len().to_string())
+                        .into_any_element(),
+                ),
                 cx,
             ))
             .child(
@@ -185,7 +219,9 @@ impl Render for PresetsPanel {
                     .border_color(theme.border.opacity(0.6))
                     .child(
                         TextInput::new(&self.search).small().cleanable().prefix(
-                            Icon::new(IconName::Search).size_3p5().text_color(theme.muted_foreground),
+                            Icon::new(IconName::Search)
+                                .size_3p5()
+                                .text_color(theme.muted_foreground),
                         ),
                     ),
             )

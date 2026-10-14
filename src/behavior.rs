@@ -203,7 +203,13 @@ pub fn read_rows<C: Component + Clone>(
     }
     let id = component_id::<C>();
     let mut candidates: HashSet<Entity> = touched.changed.iter().copied().collect();
-    candidates.extend(touched.relinked.iter().copied().filter(|e| world.has_component(*e, id)));
+    candidates.extend(
+        touched
+            .relinked
+            .iter()
+            .copied()
+            .filter(|e| world.has_component(*e, id)),
+    );
     for &owner in touched.moved {
         candidates.extend(
             attachments::instances(world, owner)

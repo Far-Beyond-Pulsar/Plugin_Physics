@@ -55,7 +55,12 @@ pub struct LayersEditor {
 }
 
 impl LayersEditor {
-    pub fn new(path: PathBuf, undo: Option<&UndoService>, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        path: PathBuf,
+        undo: Option<&UndoService>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let doc = cx.new(|_| {
             let mut doc = Document::<CollisionLayers>::open(Some(path));
             if let Some(undo) = undo {
@@ -81,9 +86,19 @@ impl LayersEditor {
             right: Some(Dock::new(340.0, vec![as_panel(inspector)])),
             bottom: Some(Dock::new(220.0, vec![as_panel(issues), as_panel(masks)])),
         };
-        let workspace = build_workspace("collision-layers-workspace", DOCK_CHANNEL, layout, window, cx);
+        let workspace = build_workspace(
+            "collision-layers-workspace",
+            DOCK_CHANNEL,
+            layout,
+            window,
+            cx,
+        );
 
-        Self { doc, workspace, focus_handle: cx.focus_handle() }
+        Self {
+            doc,
+            workspace,
+            focus_handle: cx.focus_handle(),
+        }
     }
 
     fn render_toolbar(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -106,18 +121,43 @@ impl LayersEditor {
             .border_color(theme.border)
             .child(document_controls("layers", &self.doc, cx))
             .child(toolbar_divider(cx))
-            .child(Icon::new(IconName::List).size(px(15.0)).text_color(theme.info))
-            .child(div().text_sm().font_semibold().text_color(theme.foreground).child(name))
+            .child(
+                Icon::new(IconName::List)
+                    .size(px(15.0))
+                    .text_color(theme.info),
+            )
+            .child(
+                div()
+                    .text_sm()
+                    .font_semibold()
+                    .text_color(theme.foreground)
+                    .child(name),
+            )
             .child(if layers >= MAX_LAYERS {
-                Tag::warning().small().child(format!("{layers} / {MAX_LAYERS} layers"))
+                Tag::warning()
+                    .small()
+                    .child(format!("{layers} / {MAX_LAYERS} layers"))
             } else {
-                Tag::secondary().small().child(format!("{layers} / {MAX_LAYERS} layers"))
+                Tag::secondary()
+                    .small()
+                    .child(format!("{layers} / {MAX_LAYERS} layers"))
             })
             .child(div().flex_1())
-            .children(worst.map(|w| match w {
-                Severity::Error => Tag::danger().small().child(format!("{} issues", issues.len())).into_any_element(),
-                Severity::Warning => Tag::warning().small().child(format!("{} issues", issues.len())).into_any_element(),
-                Severity::Info => Tag::info().small().child(format!("{} notes", issues.len())).into_any_element(),
+            .children(worst.map(|w| {
+                match w {
+                    Severity::Error => Tag::danger()
+                        .small()
+                        .child(format!("{} issues", issues.len()))
+                        .into_any_element(),
+                    Severity::Warning => Tag::warning()
+                        .small()
+                        .child(format!("{} issues", issues.len()))
+                        .into_any_element(),
+                    Severity::Info => Tag::info()
+                        .small()
+                        .child(format!("{} notes", issues.len()))
+                        .into_any_element(),
+                }
             }))
             .child(status_tag(&self.doc, cx))
     }

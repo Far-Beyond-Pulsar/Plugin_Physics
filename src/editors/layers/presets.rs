@@ -30,7 +30,11 @@ pub fn apply(set: &mut crate::assets::layers::CollisionLayers, preset: &LayerPre
 
 impl LayerPresets {
     pub fn new(doc: Doc, sel: Sel, cx: &mut Context<Self>) -> Self {
-        Self { doc, sel, focus_handle: cx.focus_handle() }
+        Self {
+            doc,
+            sel,
+            focus_handle: cx.focus_handle(),
+        }
     }
 }
 
@@ -40,7 +44,8 @@ impl Render for LayerPresets {
         let rows = PRESETS.iter().enumerate().map(|(n, preset)| {
             let built = preset.build();
             let (doc, sel) = (self.doc.clone(), self.sel.clone());
-            let strip = (0..built.len().min(12)).map(|i| swatch(color_of(built.color_of(i)), 11.0, cx));
+            let strip =
+                (0..built.len().min(12)).map(|i| swatch(color_of(built.color_of(i)), 11.0, cx));
             v_flex()
                 .id(SharedString::from(format!("layer-preset-{n}")))
                 .w_full()
@@ -52,17 +57,35 @@ impl Render for LayerPresets {
                 .border_color(theme.border.opacity(0.5))
                 .hover(|s| s.bg(theme.list_hover))
                 .on_click(move |_, _, cx| {
-                    doc.update(cx, |d, cx| d.edit("Apply layer preset", None, cx, |set| apply(set, preset)));
+                    doc.update(cx, |d, cx| {
+                        d.edit("Apply layer preset", None, cx, |set| apply(set, preset))
+                    });
                     sel.update(cx, |s, cx| s.select(None, cx));
                 })
                 .child(
                     h_flex()
                         .gap_2()
                         .items_center()
-                        .child(div().flex_1().text_sm().font_semibold().text_color(theme.foreground).child(preset.name))
-                        .child(Tag::secondary().small().child(format!("{} layers", built.len()))),
+                        .child(
+                            div()
+                                .flex_1()
+                                .text_sm()
+                                .font_semibold()
+                                .text_color(theme.foreground)
+                                .child(preset.name),
+                        )
+                        .child(
+                            Tag::secondary()
+                                .small()
+                                .child(format!("{} layers", built.len())),
+                        ),
                 )
-                .child(div().text_xs().text_color(theme.muted_foreground).child(preset.description))
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(theme.muted_foreground)
+                        .child(preset.description),
+                )
                 .child(h_flex().gap_0p5().flex_wrap().children(strip))
         });
 
@@ -80,7 +103,14 @@ impl Render for LayerPresets {
                     .text_color(theme.muted_foreground)
                     .child("Replaces all layers. Undo (Ctrl+Z) brings yours back."),
             )
-            .child(v_flex().id("layer-presets-scroll").flex_1().min_h_0().scrollable(ScrollbarAxis::Vertical).children(rows))
+            .child(
+                v_flex()
+                    .id("layer-presets-scroll")
+                    .flex_1()
+                    .min_h_0()
+                    .scrollable(ScrollbarAxis::Vertical)
+                    .children(rows),
+            )
     }
 }
 
