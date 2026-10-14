@@ -24,6 +24,8 @@ pub struct AssetEdit<A> {
     other: A,
     label: &'static str,
     key: Option<&'static str>,
+    /// How close together same-key edits must be to fold into this entry.
+    window: Duration,
     /// When the latest edit folded into this entry happened.
     at: Instant,
 }
@@ -41,7 +43,7 @@ impl<A: Send + 'static> UndoEntry for AssetEdit<A> {
     fn merge(&mut self, next: &Self) -> bool {
         let same_gesture = self.key.is_some()
             && self.key == next.key
-            && next.at.saturating_duration_since(self.at) < MERGE_WINDOW;
+            && next.at.saturating_duration_since(self.at) < self.window;
         if same_gesture {
             self.at = next.at;
         }
@@ -67,6 +69,9 @@ pub struct Document<A: Asset> {
     /// is left alone until the user chooses to start over.
     unreadable: Option<String>,
     status: Option<Status>,
+    /// See [`AssetEdit::window`]. Tests widen it: the window is measured in
+    /// real time, so a slow machine would otherwise split a drag into steps.
+    merge_window: Duration,
 }
 
 impl<A: Asset> Document<A> {
@@ -81,6 +86,7 @@ impl<A: Asset> Document<A> {
             load_notes: Vec::new(),
             unreadable: None,
             status: None,
+            merge_window: MERGE_WINDOW,
         };
         doc.load_from_disk();
         doc
@@ -103,6 +109,12 @@ impl<A: Asset> Document<A> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => self.unreadable = Some(error.to_string()),
         }
+    }
+
+    /// Make same-key edits fold together however far apart they are in real time.
+    #[cfg(test)]
+    pub(crate) fn merge_all_same_key_edits(&mut self) {
+        self.merge_window = Duration::MAX;
     }
 
     // ── Reading ────────────────────────────────────────────────────────────
@@ -191,6 +203,7 @@ impl<A: Asset> Document<A> {
             other: before,
             label,
             key: merge_key,
+            window: self.merge_window,
             at: Instant::now(),
         });
         cx.notify();
@@ -237,6 +250,7 @@ impl<A: Asset> Document<A> {
             other: A::new_default(),
             label: "Start over",
             key: None,
+            window: self.merge_window,
             at: Instant::now(),
         });
         cx.notify();
@@ -296,6 +310,7 @@ mod tests {
                 other: before,
                 label: "friction",
                 key,
+                window: MERGE_WINDOW,
                 at: Instant::now(),
             });
         };

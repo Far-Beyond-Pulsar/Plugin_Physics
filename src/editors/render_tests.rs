@@ -50,6 +50,9 @@ fn the_material_editor_renders_edits_undoes_and_saves(cx: &mut TestAppContext) {
     draw(cx);
 
     let doc = editor.update(cx, |e, _| e.doc.clone());
+    // Merging is measured in real time, so on a slow machine the drag below
+    // could split into several undo steps; pin it open for a stable test.
+    doc.update(cx, |d, _| d.merge_all_same_key_edits());
     let unsaved = |editor: &gpui::Entity<MaterialEditor>, cx: &mut VisualTestContext| {
         editor.read_with(cx, |e, cx| e.tab_unsaved(cx))
     };
