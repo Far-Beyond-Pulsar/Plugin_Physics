@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::behavior::{read_rows, Output, Part, PhysEvent, PhysicsBehavior, Row, Rows, Touched};
 use crate::declare_events;
-use crate::math::{array, distance, vector};
+use crate::math::{array, distance, simulated, vector};
 use crate::sim::Sim;
 
 /// The class name scripts and level files use.
@@ -212,7 +212,7 @@ fn before_step(sim: &mut Sim, out: &mut Output) {
             }
             let (position, velocity) = (array(body.translation()), array(body.linvel()));
             for field in state.fields.values() {
-                let center = field.transform.position;
+                let center = simulated(field.transform.position);
                 let radius = field.cfg.radius;
                 if radius > 0.0 && distance(center, position) <= radius {
                     inside.insert((field.owner, owner));

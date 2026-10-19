@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::behavior::{read_rows, Output, Part, PhysEvent, PhysicsBehavior, Row, Rows, Touched};
 use crate::declare_events;
-use crate::math::pose;
+use crate::math::{pose, simulated};
 use crate::sim::{ColliderInfo, Sim};
 
 /// The class name scripts and level files use.
@@ -365,7 +365,7 @@ fn apply(sim: &mut Sim, part: Part) {
 fn upsert(state: &mut State, sim: &mut Sim, row: Row<ColliderComponent>) {
     let parent = sim.owner_body.get(&row.owner).copied();
     let signature = row.cfg.signature();
-    let owner_pose = pose(row.transform.position, row.transform.rotation);
+    let owner_pose = pose(simulated(row.transform.position), row.transform.rotation);
     if let Some(t) = state.colliders.get_mut(&row.instance) {
         if t.signature == signature {
             if row.moved {

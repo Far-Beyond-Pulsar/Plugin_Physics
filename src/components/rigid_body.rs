@@ -18,7 +18,7 @@ use crate::behavior::{
     read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx,
 };
 use crate::declare_events;
-use crate::math::{array, euler_degrees_from_quat, near, pose, vector};
+use crate::math::{array, euler_degrees_from_quat, near, pose, simulated, vector};
 use crate::sim::Sim;
 
 /// The class name scripts and level files use.
@@ -207,7 +207,7 @@ fn apply(sim: &mut Sim, part: Part) {
             forget(state, sim, instance);
         }
         for row in rows.upsert {
-            let target = pose(row.transform.position, row.transform.rotation);
+            let target = pose(simulated(row.transform.position), row.transform.rotation);
             let cfg = &row.cfg;
             if let Some(tracked) = state.bodies.get_mut(&row.instance) {
                 let handle = sim.owner_body.get(&tracked.owner).copied();
@@ -328,7 +328,7 @@ fn write_back(world: &mut World, batch: Part, ctx: &mut WriteCtx) {
     };
     for body in *results {
         let written = ctx.write_transform(world, body.owner, |t| {
-            t.position = body.position;
+            t.position = body.position.map(f64::from);
             t.rotation = body.rotation;
         });
         if !written {
