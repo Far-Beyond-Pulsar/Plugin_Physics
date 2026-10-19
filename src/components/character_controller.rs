@@ -13,7 +13,7 @@ use crate::behavior::{
     read_rows, Output, Part, PhysEvent, PhysicsBehavior, Rows, Touched, WriteCtx,
 };
 use crate::declare_events;
-use crate::math::{array, euler_degrees_from_quat, pose, vector};
+use crate::math::{array, euler_degrees_from_quat, pose, simulated, vector};
 use crate::sim::{ColliderInfo, Sim, GRAVITY};
 
 /// The class name scripts and level files use.
@@ -190,7 +190,7 @@ fn apply(sim: &mut Sim, part: Part) {
                             .and_then(|&h| sim.bodies.get_mut(h))
                         {
                             body.set_position(
-                                pose(row.transform.position, row.transform.rotation),
+                                pose(simulated(row.transform.position), row.transform.rotation),
                                 true,
                             );
                         }
@@ -209,7 +209,7 @@ fn apply(sim: &mut Sim, part: Part) {
                 continue;
             }
             let body = RigidBodyBuilder::kinematic_position_based()
-                .pose(pose(row.transform.position, row.transform.rotation))
+                .pose(pose(simulated(row.transform.position), row.transform.rotation))
                 .build();
             let body = sim.insert_body(row.owner, body);
             let collider = ColliderBuilder::capsule_y(
@@ -334,7 +334,7 @@ fn write_back(world: &mut World, batch: Part, ctx: &mut WriteCtx) {
         return;
     };
     for r in *results {
-        if !ctx.write_transform(world, r.owner, |t| t.position = r.position) {
+        if !ctx.write_transform(world, r.owner, |t| t.position = r.position.map(f64::from)) {
             continue;
         }
         if let Some(mut c) = world.get_mut::<CharacterControllerComponent>(r.instance) {

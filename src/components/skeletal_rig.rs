@@ -17,7 +17,7 @@ use pulsar_world_registry::pulsar_scene_model::Transform;
 use rapier3d::prelude::*;
 
 use crate::behavior::{read_rows, Output, Part, PhysicsBehavior, Touched, WriteCtx};
-use crate::math::{pose, vector};
+use crate::math::{pose, simulated, vector};
 use crate::sim::Sim;
 
 const NAME: &str = "skeletal_rig";
@@ -198,7 +198,7 @@ fn apply(sim: &mut Sim, part: Part) {
                 forget(state, sim, row.instance, true);
                 continue;
             }
-            let root = pose(row.transform.position, row.transform.rotation);
+            let root = pose(simulated(row.transform.position), row.transform.rotation);
             let rebuild = state.rigs.get(&row.instance).is_none_or(|rig| {
                 rig.owner != row.owner
                     || rig.asset.as_ref() != Some(&asset)

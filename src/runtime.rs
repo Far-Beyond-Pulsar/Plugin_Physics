@@ -478,7 +478,7 @@ mod tests {
         instance
     }
 
-    fn object(world: &mut World, position: [f32; 3]) -> Entity {
+    fn object(world: &mut World, position: [f64; 3]) -> Entity {
         let e = world.spawn();
         world.insert(
             e,
@@ -500,7 +500,7 @@ mod tests {
         }
     }
 
-    fn y(world: &World, e: Entity) -> f32 {
+    fn y(world: &World, e: Entity) -> f64 {
         world.get::<Transform>(e).unwrap().position[1]
     }
 

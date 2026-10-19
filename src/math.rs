@@ -27,7 +27,14 @@ pub fn euler_degrees_from_quat([x, y, z, w]: [f32; 4]) -> [f32; 3] {
     [pitch.to_degrees(), yaw.to_degrees(), roll.to_degrees()]
 }
 
-/// A pose from a `Transform`'s position and rotation (degrees).
+/// A scene position (f64, `Transform::position`) as the simulation's f32:
+/// physics runs in f32 world space (to the f32's precision far from the
+/// world's origin).
+pub fn simulated(position: [f64; 3]) -> [f32; 3] {
+    position.map(|v| v as f32)
+}
+
+/// A pose from a `Transform`'s position (as simulated) and rotation (degrees).
 pub fn pose(position: [f32; 3], rotation: [f32; 3]) -> Pose {
     let [x, y, z, w] = quat_from_euler_degrees(rotation);
     Pose::from_parts(vector(position), Rotation::from_xyzw(x, y, z, w))
