@@ -209,7 +209,10 @@ fn apply(sim: &mut Sim, part: Part) {
                 continue;
             }
             let body = RigidBodyBuilder::kinematic_position_based()
-                .pose(pose(simulated(row.transform.position), row.transform.rotation))
+                .pose(pose(
+                    simulated(row.transform.position),
+                    row.transform.rotation,
+                ))
                 .build();
             let body = sim.insert_body(row.owner, body);
             let collider = ColliderBuilder::capsule_y(
