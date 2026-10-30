@@ -489,9 +489,11 @@ fn unscale_vector(value: [f32; 3], scale: [f32; 3]) -> [f32; 3] {
     ]
 }
 
+/// The bones the rig's dynamic bodies own this step, as skeleton bone indices with
+/// mesh-space matrices. Animation owns every other bone.
 struct RigPoseOut {
     instance: Entity,
-    pose: Vec<[[f32; 4]; 4]>,
+    bones: Vec<(usize, [[f32; 4]; 4])>,
 }
 
 struct RigOutput {
@@ -507,7 +509,7 @@ fn after_steps(sim: &mut Sim, _seconds: f32, out: &mut Output) {
     sim.with_state::<State, _>(|state, sim| {
         for (&instance, rig) in &state.rigs {
             let Some(asset) = &rig.asset else { continue };
-            let mut pose = rig.bone_pose.clone();
+            let mut owned: Vec<(usize, [[f32; 4]; 4])> = Vec::new();
             let index: HashMap<_, _> = rig
                 .bone_ids
                 .iter()
@@ -535,13 +537,16 @@ fn after_steps(sim: &mut Sim, _seconds: f32, out: &mut Output) {
                     [translation.x, translation.y, translation.z],
                     rig.root_scale,
                 );
-                pose[slot] = glam::Mat4::from_rotation_translation(
-                    glam::Quat::from_xyzw(rotation.x, rotation.y, rotation.z, rotation.w),
-                    glam::Vec3::from_array(translation),
-                )
-                .to_cols_array_2d();
+                owned.push((
+                    slot,
+                    glam::Mat4::from_rotation_translation(
+                        glam::Quat::from_xyzw(rotation.x, rotation.y, rotation.z, rotation.w),
+                        glam::Vec3::from_array(translation),
+                    )
+                    .to_cols_array_2d(),
+                ));
             }
-            batch.poses.push(RigPoseOut { instance, pose });
+            batch.poses.push(RigPoseOut { instance, bones: owned });
         }
         batch.released = std::mem::take(&mut state.released);
     });
@@ -556,7 +561,8 @@ fn write_back(world: &mut World, part: Part, _ctx: &mut WriteCtx) {
     };
     for output in batch.poses {
         if let Some(mut component) = world.get_mut::<SkeletalMeshComponent>(output.instance) {
-            component.apply_physics_pose(output.pose);
+            // the rig owns its dynamic bones only; the animation keeps running for the rest
+            component.apply_physics_bones(output.bones);
         }
     }
     for instance in batch.released {
