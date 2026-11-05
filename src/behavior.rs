@@ -170,21 +170,24 @@ pub struct Rows<C> {
     pub remove: Vec<Entity>,
 }
 
-fn row_of<C: Component + Clone>(
+fn row_of<T>(
     world: &World,
     touched: &Touched,
     instance: Entity,
-    keep: &impl Fn(&C) -> bool,
-) -> Option<Row<C>> {
-    let cfg = world.get::<C>(instance)?;
+    read: &impl Fn(&World, Entity) -> Option<T>,
+) -> Option<Row<T>> {
     let link = world.get::<ComponentOwner>(instance)?;
     let owner = link.entity();
-    (link.is_enabled() && keep(cfg)).then(|| Row {
+    if !link.is_enabled() {
+        return None;
+    }
+    let cfg = read(world, instance)?;
+    Some(Row {
         instance,
         owner,
         transform: world.get::<Transform>(owner).copied().unwrap_or_default(),
         moved: touched.rescan || touched.moved.contains(&owner),
-        cfg: cfg.clone(),
+        cfg,
     })
 }
 
@@ -198,10 +201,23 @@ pub fn read_rows<C: Component + Clone>(
     touched: &Touched,
     keep: impl Fn(&C) -> bool,
 ) -> Option<Rows<C>> {
+    read_rows_with(world, touched, component_id::<C>(), |world, instance| {
+        world.get::<C>(instance).filter(|cfg| keep(cfg)).map(|cfg| cfg.clone())
+    })
+}
+
+/// [`read_rows`] of the component with id `id`, each row's data read by
+/// `read` (`None`: filtered out): a component another plugin owns, read
+/// through its api.
+pub fn read_rows_with<T>(
+    world: &mut World,
+    touched: &Touched,
+    id: pulsar_scenedb::ComponentId,
+    read: impl Fn(&World, Entity) -> Option<T>,
+) -> Option<Rows<T>> {
     if touched.is_empty() {
         return None;
     }
-    let id = component_id::<C>();
     let mut candidates: HashSet<Entity> = touched.changed.iter().copied().collect();
     candidates.extend(
         touched
@@ -218,13 +234,18 @@ pub fn read_rows<C: Component + Clone>(
         );
     }
     if touched.rescan {
-        candidates.extend(world.query::<&C>().map(|(instance, _)| instance));
+        candidates.extend(
+            world
+                .query::<&ComponentOwner>()
+                .map(|(instance, _)| instance)
+                .filter(|instance| world.has_component(*instance, id)),
+        );
     }
 
     let mut upsert = Vec::with_capacity(candidates.len());
     let mut remove = touched.removed.clone();
     for instance in candidates {
-        match row_of(world, touched, instance, &keep) {
+        match row_of(world, touched, instance, &read) {
             Some(row) => upsert.push(row),
             // Disabled, filtered out or gone: the sim must forget it.
             None if !touched.rescan => remove.push(instance),
