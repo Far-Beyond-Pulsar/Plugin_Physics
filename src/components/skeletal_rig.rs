@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
-use helio_mesh_api::skinning::{skinned_mesh_access, SkinnedPose};
+use helio_component::skinning::{skeletal_pose_access, SkeletalPose};
 use pulsar_physics::{SkeletalJointKind, SkeletalMotion, SkeletalPhysicsAsset, SkeletalShape};
 use pulsar_scenedb::{component_id, Entity, World};
 use pulsar_world_registry::pulsar_scene_model::Transform;
@@ -42,14 +42,14 @@ struct RigRows {
 }
 
 fn read(world: &mut World, touched: &Touched) -> Option<Part> {
-    // Skinned meshes are the meshes plugin's: read through its api.
-    let access = skinned_mesh_access()?;
+    // Animated skeletons are the animation plugin's: read through the contract.
+    let access = skeletal_pose_access()?;
     let rows = read_rows_with(world, touched, (access.component)(), access.pose)?;
     let upsert = rows
         .upsert
         .into_iter()
         .map(|row| {
-            let SkinnedPose {
+            let SkeletalPose {
                 mesh,
                 bone_ids,
                 bone_world_pose,
@@ -549,7 +549,7 @@ fn write_back(world: &mut World, part: Part, _ctx: &mut WriteCtx) {
     let Ok(batch) = part.downcast::<RigOutput>() else {
         return;
     };
-    let Some(access) = skinned_mesh_access() else {
+    let Some(access) = skeletal_pose_access() else {
         return;
     };
     for output in batch.poses {
@@ -561,11 +561,11 @@ fn write_back(world: &mut World, part: Part, _ctx: &mut WriteCtx) {
     }
 }
 
-/// The skinned mesh component's id, or (without the meshes plugin) a
+/// The animator component's id, or (without the animation plugin) a
 /// component no instance has, so the rig reads nothing.
-fn skinned_component() -> pulsar_scenedb::ComponentId {
-    struct NoSkinnedMeshes;
-    skinned_mesh_access().map_or_else(component_id::<NoSkinnedMeshes>, |access| {
+fn animator_component() -> pulsar_scenedb::ComponentId {
+    struct NoAnimators;
+    skeletal_pose_access().map_or_else(component_id::<NoAnimators>, |access| {
         (access.component)()
     })
 }
@@ -574,7 +574,7 @@ inventory::submit! {
     PhysicsBehavior {
         name: NAME,
         order: ORDER,
-        component: skinned_component,
+        component: animator_component,
         read,
         apply,
         settle: None,
