@@ -14,15 +14,18 @@ name = "physics_plugin"
 builtin = []
 
 [dependencies]
+# The plugin's descriptor and its editor provider's registration.
+pulsar_plugins = { workspace = true }
+plugin_manager = { workspace = true }
 gpui-ce = { workspace = true }
 ui = { workspace = true }
 plugin_editor_api = { workspace = true }
 engine_class_derive = { workspace = true }
 engine_fs = { workspace = true, features = ["editor"] }
 engine_state = { workspace = true }
-# Skinned meshes are the meshes plugin's: the rig reads and drives them
-# through its api (`helio_mesh_api::skinning`).
-helio-mesh-api = { workspace = true }
+# Animated skeletons are the animation plugin's: the rig reads and drives
+# them through the core contract (`helio_component::skinning`).
+helio_component = { workspace = true }
 # Enum properties get a dropdown editor, which needs the GPUI-typed prims (as helio-component).
 pulsar_reflection = { workspace = true, features = ["prims-gpui"] }
 pulsar_scenedb = { workspace = true }
