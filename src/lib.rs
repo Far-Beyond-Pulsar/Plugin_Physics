@@ -220,3 +220,10 @@ mod tests {
         }
     }
 }
+
+// This plugin's descriptor (`pulsar-plugin.toml`): linking the crate installs it.
+pulsar_plugins::installed!("pulsar-plugin.toml");
+
+/// The plugin's editor provider, submitted to the editor (origin-gated).
+#[cfg(feature = "builtin")]
+mod builtin_provider;

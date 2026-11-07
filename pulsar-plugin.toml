@@ -1,0 +1,15 @@
+# The `pulsar.physics` plugin's descriptor. A project enables or disables it in
+# its Pulsar.toml (`[plugins]`); disabled, its editors and file types are
+# absent (see crates/core/pulsar_plugins). Its first module carries this file
+# (`pulsar_plugins::installed!`).
+id = "pulsar.physics"
+name = "Physics"
+description = "Rigid bodies, colliders and joints (Rapier), physics materials and collision layers, and their editors"
+enabled_by_default = true
+requires = []
+
+[modules]
+# What a game built for the project links.
+runtime = ["physics_plugin"]
+# What the editor links in addition.
+editor = []
