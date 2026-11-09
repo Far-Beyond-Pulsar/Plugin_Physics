@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use pulsar_physics::SkeletalPhysicsAsset;
+use physics_api::SkeletalPhysicsAsset;
 use serde_json::Value;
 use skeletal_assets::assets::SkeletonAsset;
 use skeletal_assets::ids::SkeletalMeshId;

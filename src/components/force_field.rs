@@ -16,9 +16,10 @@ use crate::sim::Sim;
 /// The class name scripts and level files use.
 pub const FORCE_FIELD_CLASS_NAME: &str = "ForceFieldComponent";
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum ForceFieldKind {
     /// Along `direction`, everywhere in range (wind, conveyor).
+    #[default]
     Directional,
     /// Toward the owner (positive strength) or away (negative).
     Radial,
@@ -28,24 +29,13 @@ pub enum ForceFieldKind {
     Drag,
 }
 
-impl Default for ForceFieldKind {
-    fn default() -> Self {
-        Self::Directional
-    }
-}
-
 /// How strength falls off from the centre to `radius`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum FalloffMode {
     Constant,
+    #[default]
     Linear,
     Quadratic,
-}
-
-impl Default for FalloffMode {
-    fn default() -> Self {
-        Self::Linear
-    }
 }
 
 #[engine_class(category = "Physics", clone, debug, serialize, deserialize)]

@@ -17,7 +17,7 @@ use crate::assets::rig::{load_skeleton_for_mesh, physics_assets_for_mesh, valida
 use crate::assets::Severity;
 use crate::editors::common::document::Document;
 use crate::editors::common::toolbar::{document_controls, file_banners, status_tag};
-use pulsar_physics::{SkeletalJointKind, SkeletalMotion, SkeletalPhysicsAsset, SkeletalShape};
+use physics_api::{SkeletalJointKind, SkeletalMotion, SkeletalPhysicsAsset, SkeletalShape};
 
 pub const EDITOR_ID: &str = "skeletal-physics-editor";
 

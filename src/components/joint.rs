@@ -18,9 +18,10 @@ use crate::sim::Sim;
 /// The class name scripts and level files use.
 pub const JOINT_CLASS_NAME: &str = "JointComponent";
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum JointKind {
     /// Welds the bodies together.
+    #[default]
     Fixed,
     /// Rotates about `axis` (a door, a wheel). Limits are angles in degrees.
     Hinge,
@@ -30,12 +31,6 @@ pub enum JointKind {
     BallSocket,
     /// Pulls toward `rest_length` apart with `stiffness` and `damping`.
     Spring,
-}
-
-impl Default for JointKind {
-    fn default() -> Self {
-        Self::Fixed
-    }
 }
 
 #[engine_class(category = "Physics", clone, debug, serialize, deserialize)]

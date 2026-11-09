@@ -15,7 +15,13 @@ builtin = []
 # The asset editors, the file type definitions, the editor provider and the
 # DLL entry point (`export_plugin!` without `builtin`). A game links the crate
 # without it.
-editor = ["dep:plugin_manager", "dep:ui", "dep:plugin_editor_api"]
+editor = [
+    "dep:plugin_manager",
+    "dep:ui",
+    "dep:gpui-ce",
+    "dep:plugin_editor_api",
+    "pulsar_reflection/prims-gpui",
+]
 
 [dependencies]
 # The plugin's descriptor and its registrations' origin.
@@ -24,7 +30,7 @@ plugin_manager = { workspace = true, optional = true }
 # The derive of every reflected unit enum names GPUI (its property panel
 # dropdown, `pulsar_reflection_derive`), so the components need it even
 # without the editor.
-gpui-ce = { workspace = true }
+gpui-ce = { workspace = true, optional = true }
 ui = { workspace = true, optional = true }
 plugin_editor_api = { workspace = true, optional = true }
 engine_class_derive = { workspace = true }
@@ -35,8 +41,8 @@ engine_state = { workspace = true }
 # Animated skeletons are the animation plugin's: the rig reads and drives
 # them through the core contract (`helio_component::skinning`).
 helio_component = { workspace = true }
-# Enum properties get a dropdown editor, which needs the GPUI-typed prims (as helio-component).
-pulsar_reflection = { workspace = true, features = ["prims-gpui"] }
+# Reflection; the GPUI-typed prims only with `editor` (the physics editors).
+pulsar_reflection = { workspace = true }
 pulsar_scenedb = { workspace = true }
 pulsar_world_registry = { workspace = true }
 pulsar_events = { workspace = true }
@@ -45,7 +51,17 @@ inventory = { workspace = true }
 rapier3d = { workspace = true }
 glam = { workspace = true }
 skeletal_assets = { workspace = true }
-pulsar_physics = { workspace = true }
+# The plugin's contracts other plugins read: the `.physasset` schema.
+physics_api = { workspace = true }
+# The scene rows physics provides (water hitboxes), registered with the
+# engine's GPU mirror through `SceneRowsRegistration`.
+engine_backend = { path = "../../../crates/core/engine_backend", default-features = false, features = ["render"] }
+# Water's api: the hitbox rows bodies on the WaterSim channel derive.
+helio-water-api = { workspace = true }
+pulsar_scenedb_derive = { workspace = true }
+bytemuck = { workspace = true, features = ["derive"] }
+# `#[derive(SceneStore)]` output names `::wgpu` directly.
+wgpu = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

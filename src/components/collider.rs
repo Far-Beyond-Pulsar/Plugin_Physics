@@ -22,9 +22,10 @@ use crate::sim::{ColliderInfo, Sim};
 pub const COLLIDER_CLASS_NAME: &str = "ColliderComponent";
 
 /// Which shape a collider has.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum ColliderShape {
     /// Axis-aligned in the owner's space; uses `half_extents`.
+    #[default]
     Box,
     /// Uses `radius`.
     Sphere,
@@ -40,24 +41,13 @@ pub enum ColliderShape {
     TriangleMesh,
 }
 
-impl Default for ColliderShape {
-    fn default() -> Self {
-        Self::Box
-    }
-}
-
 /// The axis a capsule, cylinder or cone runs along, in the owner's space.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum ColliderAxis {
     X,
+    #[default]
     Y,
     Z,
-}
-
-impl Default for ColliderAxis {
-    fn default() -> Self {
-        Self::Y
-    }
 }
 
 /// A collider's shape with the dimensions that shape uses.

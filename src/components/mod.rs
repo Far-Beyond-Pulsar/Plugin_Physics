@@ -9,6 +9,7 @@ mod character_controller;
 mod collider;
 mod force_field;
 mod joint;
+pub mod legacy;
 mod rigid_body;
 mod skeletal_rig;
 
@@ -72,6 +73,16 @@ pub fn definitions() -> Vec<ComponentDefinition> {
             "Force Field",
             "Applies directional, radial, vortex or drag forces to bodies in range",
         ),
+        def(
+            "PhysicsComponent",
+            "Physics",
+            "Physical body with collision and simulation settings",
+        ),
+        def(
+            "RigidbodyComponent",
+            "Rigidbody",
+            "Rigid body dynamics (mass, velocity, forces)",
+        ),
     ]
 }
 
@@ -92,6 +103,14 @@ pub fn factories() -> Vec<(String, ComponentFactory)> {
         (
             FORCE_FIELD_CLASS_NAME.into(),
             factory::<ForceFieldComponent>(),
+        ),
+        (
+            "PhysicsComponent".into(),
+            factory::<legacy::PhysicsComponent>(),
+        ),
+        (
+            "RigidbodyComponent".into(),
+            factory::<legacy::RigidbodyComponent>(),
         ),
     ]
 }

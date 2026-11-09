@@ -1,0 +1,14 @@
+[package]
+name = "physics_api"
+version = "0.1.0"
+edition = "2021"
+description = "The physics plugin's contracts other plugins read: the `.physasset` skeletal physics schema (bodies, shapes, joints) and its skeleton-driven defaults. Data only: no statics, no registrations."
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# The skeleton and mesh identity a rig is authored against (the animation plugin's assets).
+skeletal_assets = { workspace = true }
+
+[lints]
+workspace = true

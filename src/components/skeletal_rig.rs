@@ -11,7 +11,7 @@ use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 use helio_component::skinning::{skeletal_pose_access, SkeletalPose};
-use pulsar_physics::{SkeletalJointKind, SkeletalMotion, SkeletalPhysicsAsset, SkeletalShape};
+use physics_api::{SkeletalJointKind, SkeletalMotion, SkeletalPhysicsAsset, SkeletalShape};
 use pulsar_scenedb::{component_id, Entity, World};
 use pulsar_world_registry::pulsar_scene_model::Transform;
 use rapier3d::prelude::*;

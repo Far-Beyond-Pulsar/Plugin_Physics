@@ -1,0 +1,2427 @@
+{
+  "classes": [
+    {
+      "name": "CharacterControllerComponent",
+      "properties": [
+        {
+          "name": "desired_velocity",
+          "display_name": "Desired Velocity",
+          "category": "Motion",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "gravity_scale",
+          "display_name": "Gravity Scale",
+          "category": "Movement",
+          "type": "f32"
+        },
+        {
+          "name": "grounded",
+          "display_name": "Grounded",
+          "category": "Motion",
+          "type": "bool"
+        },
+        {
+          "name": "height",
+          "display_name": "Height",
+          "category": "Capsule",
+          "type": "f32"
+        },
+        {
+          "name": "push_dynamic_bodies",
+          "display_name": "Push Dynamic Bodies",
+          "category": "Movement",
+          "type": "bool"
+        },
+        {
+          "name": "radius",
+          "display_name": "Radius",
+          "category": "Capsule",
+          "type": "f32"
+        },
+        {
+          "name": "skin_width",
+          "display_name": "Skin Width",
+          "category": "Capsule",
+          "type": "f32"
+        },
+        {
+          "name": "slope_limit_degrees",
+          "display_name": "Slope Limit Degrees",
+          "category": "Movement",
+          "type": "f32"
+        },
+        {
+          "name": "snap_to_ground",
+          "display_name": "Snap To Ground",
+          "category": "Movement",
+          "type": "f32"
+        },
+        {
+          "name": "step_height",
+          "display_name": "Step Height",
+          "category": "Movement",
+          "type": "f32"
+        },
+        {
+          "name": "vertical_velocity",
+          "display_name": "Vertical Velocity",
+          "category": "Motion",
+          "type": "f32"
+        }
+      ],
+      "methods": [
+        {
+          "name": "get_desired_velocity",
+          "display_name": "Get Desired_velocity",
+          "category": "Motion",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_gravity_scale",
+          "display_name": "Get Gravity_scale",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_grounded",
+          "display_name": "Get Grounded",
+          "category": "Motion",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_height",
+          "display_name": "Get Height",
+          "category": "Capsule",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_push_dynamic_bodies",
+          "display_name": "Get Push_dynamic_bodies",
+          "category": "Movement",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_radius",
+          "display_name": "Get Radius",
+          "category": "Capsule",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_skin_width",
+          "display_name": "Get Skin_width",
+          "category": "Capsule",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_slope_limit_degrees",
+          "display_name": "Get Slope_limit_degrees",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_snap_to_ground",
+          "display_name": "Get Snap_to_ground",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_step_height",
+          "display_name": "Get Step_height",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_vertical_velocity",
+          "display_name": "Get Vertical_velocity",
+          "category": "Motion",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_desired_velocity",
+          "display_name": "Set Desired_velocity",
+          "category": "Motion",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_gravity_scale",
+          "display_name": "Set Gravity_scale",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_grounded",
+          "display_name": "Set Grounded",
+          "category": "Motion",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_height",
+          "display_name": "Set Height",
+          "category": "Capsule",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_push_dynamic_bodies",
+          "display_name": "Set Push_dynamic_bodies",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_radius",
+          "display_name": "Set Radius",
+          "category": "Capsule",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_skin_width",
+          "display_name": "Set Skin_width",
+          "category": "Capsule",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_slope_limit_degrees",
+          "display_name": "Set Slope_limit_degrees",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_snap_to_ground",
+          "display_name": "Set Snap_to_ground",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_step_height",
+          "display_name": "Set Step_height",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_vertical_velocity",
+          "display_name": "Set Vertical_velocity",
+          "category": "Motion",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "ColliderComponent",
+      "properties": [
+        {
+          "name": "axis",
+          "display_name": "Axis",
+          "category": "Shape",
+          "type": "ColliderAxis"
+        },
+        {
+          "name": "center",
+          "display_name": "Center",
+          "category": "Shape",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "enabled",
+          "display_name": "Enabled",
+          "category": "Shape",
+          "type": "bool"
+        },
+        {
+          "name": "half_extents",
+          "display_name": "Half Extents",
+          "category": "Shape",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "height",
+          "display_name": "Height",
+          "category": "Shape",
+          "type": "f32"
+        },
+        {
+          "name": "is_trigger",
+          "display_name": "Is Trigger",
+          "category": "Filtering",
+          "type": "bool"
+        },
+        {
+          "name": "layer",
+          "display_name": "Layer",
+          "category": "Filtering",
+          "type": "String"
+        },
+        {
+          "name": "mesh",
+          "display_name": "Mesh",
+          "category": "Shape",
+          "type": "String"
+        },
+        {
+          "name": "physics_material",
+          "display_name": "Physics Material",
+          "category": "Filtering",
+          "type": "String"
+        },
+        {
+          "name": "radius",
+          "display_name": "Radius",
+          "category": "Shape",
+          "type": "f32"
+        },
+        {
+          "name": "shape",
+          "display_name": "Shape",
+          "category": "Shape",
+          "type": "ColliderShape"
+        }
+      ],
+      "methods": [
+        {
+          "name": "get_axis",
+          "display_name": "Get Axis",
+          "category": "Shape",
+          "params": [],
+          "return_type": "ColliderAxis",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_center",
+          "display_name": "Get Center",
+          "category": "Shape",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_enabled",
+          "display_name": "Get Enabled",
+          "category": "Shape",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_half_extents",
+          "display_name": "Get Half_extents",
+          "category": "Shape",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_height",
+          "display_name": "Get Height",
+          "category": "Shape",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_is_trigger",
+          "display_name": "Get Is_trigger",
+          "category": "Filtering",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_layer",
+          "display_name": "Get Layer",
+          "category": "Filtering",
+          "params": [],
+          "return_type": "String",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_mesh",
+          "display_name": "Get Mesh",
+          "category": "Shape",
+          "params": [],
+          "return_type": "String",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_physics_material",
+          "display_name": "Get Physics_material",
+          "category": "Filtering",
+          "params": [],
+          "return_type": "String",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_radius",
+          "display_name": "Get Radius",
+          "category": "Shape",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_shape",
+          "display_name": "Get Shape",
+          "category": "Shape",
+          "params": [],
+          "return_type": "ColliderShape",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_axis",
+          "display_name": "Set Axis",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "ColliderAxis"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_center",
+          "display_name": "Set Center",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_enabled",
+          "display_name": "Set Enabled",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_half_extents",
+          "display_name": "Set Half_extents",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_height",
+          "display_name": "Set Height",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_is_trigger",
+          "display_name": "Set Is_trigger",
+          "category": "Filtering",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_layer",
+          "display_name": "Set Layer",
+          "category": "Filtering",
+          "params": [
+            {
+              "name": "value",
+              "type": "String"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_mesh",
+          "display_name": "Set Mesh",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "String"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_physics_material",
+          "display_name": "Set Physics_material",
+          "category": "Filtering",
+          "params": [
+            {
+              "name": "value",
+              "type": "String"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_radius",
+          "display_name": "Set Radius",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_shape",
+          "display_name": "Set Shape",
+          "category": "Shape",
+          "params": [
+            {
+              "name": "value",
+              "type": "ColliderShape"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "ForceFieldComponent",
+      "properties": [
+        {
+          "name": "affected_layer",
+          "display_name": "Affected Layer",
+          "category": "Range",
+          "type": "String"
+        },
+        {
+          "name": "direction",
+          "display_name": "Direction",
+          "category": "Field",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "enabled",
+          "display_name": "Enabled",
+          "category": "Field",
+          "type": "bool"
+        },
+        {
+          "name": "falloff",
+          "display_name": "Falloff",
+          "category": "Range",
+          "type": "FalloffMode"
+        },
+        {
+          "name": "kind",
+          "display_name": "Kind",
+          "category": "Field",
+          "type": "ForceFieldKind"
+        },
+        {
+          "name": "radius",
+          "display_name": "Radius",
+          "category": "Range",
+          "type": "f32"
+        },
+        {
+          "name": "strength",
+          "display_name": "Strength",
+          "category": "Field",
+          "type": "f32"
+        }
+      ],
+      "methods": [
+        {
+          "name": "get_affected_layer",
+          "display_name": "Get Affected_layer",
+          "category": "Range",
+          "params": [],
+          "return_type": "String",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_direction",
+          "display_name": "Get Direction",
+          "category": "Field",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_enabled",
+          "display_name": "Get Enabled",
+          "category": "Field",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_falloff",
+          "display_name": "Get Falloff",
+          "category": "Range",
+          "params": [],
+          "return_type": "FalloffMode",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_kind",
+          "display_name": "Get Kind",
+          "category": "Field",
+          "params": [],
+          "return_type": "ForceFieldKind",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_radius",
+          "display_name": "Get Radius",
+          "category": "Range",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_strength",
+          "display_name": "Get Strength",
+          "category": "Field",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_affected_layer",
+          "display_name": "Set Affected_layer",
+          "category": "Range",
+          "params": [
+            {
+              "name": "value",
+              "type": "String"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_direction",
+          "display_name": "Set Direction",
+          "category": "Field",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_enabled",
+          "display_name": "Set Enabled",
+          "category": "Field",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_falloff",
+          "display_name": "Set Falloff",
+          "category": "Range",
+          "params": [
+            {
+              "name": "value",
+              "type": "FalloffMode"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_kind",
+          "display_name": "Set Kind",
+          "category": "Field",
+          "params": [
+            {
+              "name": "value",
+              "type": "ForceFieldKind"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_radius",
+          "display_name": "Set Radius",
+          "category": "Range",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_strength",
+          "display_name": "Set Strength",
+          "category": "Field",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "JointComponent",
+      "properties": [
+        {
+          "name": "anchor",
+          "display_name": "Anchor",
+          "category": "Joint",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "axis",
+          "display_name": "Axis",
+          "category": "Joint",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "break_force",
+          "display_name": "Break Force",
+          "category": "Joint",
+          "type": "f32"
+        },
+        {
+          "name": "collide_connected",
+          "display_name": "Collide Connected",
+          "category": "Joint",
+          "type": "bool"
+        },
+        {
+          "name": "connected_anchor",
+          "display_name": "Connected Anchor",
+          "category": "Joint",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "connected_object",
+          "display_name": "Connected Object",
+          "category": "Joint",
+          "type": "String"
+        },
+        {
+          "name": "damping",
+          "display_name": "Damping",
+          "category": "Spring",
+          "type": "f32"
+        },
+        {
+          "name": "kind",
+          "display_name": "Kind",
+          "category": "Joint",
+          "type": "JointKind"
+        },
+        {
+          "name": "limit_max",
+          "display_name": "Limit Max",
+          "category": "Limits",
+          "type": "f32"
+        },
+        {
+          "name": "limit_min",
+          "display_name": "Limit Min",
+          "category": "Limits",
+          "type": "f32"
+        },
+        {
+          "name": "limits_enabled",
+          "display_name": "Limits Enabled",
+          "category": "Limits",
+          "type": "bool"
+        },
+        {
+          "name": "rest_length",
+          "display_name": "Rest Length",
+          "category": "Spring",
+          "type": "f32"
+        },
+        {
+          "name": "stiffness",
+          "display_name": "Stiffness",
+          "category": "Spring",
+          "type": "f32"
+        }
+      ],
+      "methods": [
+        {
+          "name": "get_anchor",
+          "display_name": "Get Anchor",
+          "category": "Joint",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_axis",
+          "display_name": "Get Axis",
+          "category": "Joint",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_break_force",
+          "display_name": "Get Break_force",
+          "category": "Joint",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_collide_connected",
+          "display_name": "Get Collide_connected",
+          "category": "Joint",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_connected_anchor",
+          "display_name": "Get Connected_anchor",
+          "category": "Joint",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_connected_object",
+          "display_name": "Get Connected_object",
+          "category": "Joint",
+          "params": [],
+          "return_type": "String",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_damping",
+          "display_name": "Get Damping",
+          "category": "Spring",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_kind",
+          "display_name": "Get Kind",
+          "category": "Joint",
+          "params": [],
+          "return_type": "JointKind",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_limit_max",
+          "display_name": "Get Limit_max",
+          "category": "Limits",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_limit_min",
+          "display_name": "Get Limit_min",
+          "category": "Limits",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_limits_enabled",
+          "display_name": "Get Limits_enabled",
+          "category": "Limits",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_rest_length",
+          "display_name": "Get Rest_length",
+          "category": "Spring",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_stiffness",
+          "display_name": "Get Stiffness",
+          "category": "Spring",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_anchor",
+          "display_name": "Set Anchor",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_axis",
+          "display_name": "Set Axis",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_break_force",
+          "display_name": "Set Break_force",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_collide_connected",
+          "display_name": "Set Collide_connected",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_connected_anchor",
+          "display_name": "Set Connected_anchor",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_connected_object",
+          "display_name": "Set Connected_object",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "String"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_damping",
+          "display_name": "Set Damping",
+          "category": "Spring",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_kind",
+          "display_name": "Set Kind",
+          "category": "Joint",
+          "params": [
+            {
+              "name": "value",
+              "type": "JointKind"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_limit_max",
+          "display_name": "Set Limit_max",
+          "category": "Limits",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_limit_min",
+          "display_name": "Set Limit_min",
+          "category": "Limits",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_limits_enabled",
+          "display_name": "Set Limits_enabled",
+          "category": "Limits",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_rest_length",
+          "display_name": "Set Rest_length",
+          "category": "Spring",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_stiffness",
+          "display_name": "Set Stiffness",
+          "category": "Spring",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "PhysicsComponent",
+      "properties": [
+        {
+          "name": "all_channels_response",
+          "display_name": "All Channels Response",
+          "category": "Collision",
+          "type": "CollisionResponse"
+        },
+        {
+          "name": "channel_responses",
+          "display_name": "Channel Responses",
+          "category": "Collision",
+          "type": "alloc::vec::Vec<physics_plugin::components::legacy::physics_component::sub_props::collision::ChannelCollisionResponse>"
+        },
+        {
+          "name": "collision_channel",
+          "display_name": "Collision Channel",
+          "category": "Collision",
+          "type": "u64"
+        },
+        {
+          "name": "collision_enabled",
+          "display_name": "Collision Enabled",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "collision_on_rotation",
+          "display_name": "Collision On Rotation",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "collision_preset",
+          "display_name": "Collision Preset",
+          "category": "Collision",
+          "type": "CollisionPreset"
+        },
+        {
+          "name": "combined_friction",
+          "display_name": "Combined Friction",
+          "category": "Physics Material",
+          "type": "f32"
+        },
+        {
+          "name": "combined_restitution",
+          "display_name": "Combined Restitution",
+          "category": "Physics Material",
+          "type": "f32"
+        },
+        {
+          "name": "complex_as_simple",
+          "display_name": "Complex As Simple",
+          "category": "Collision",
+          "type": "bool"
+        },
+        {
+          "name": "create_physics_state",
+          "display_name": "Create Physics State",
+          "category": "Collision",
+          "type": "bool"
+        },
+        {
+          "name": "enable_sleeping",
+          "display_name": "Enable Sleeping",
+          "category": "Simulation",
+          "type": "bool"
+        },
+        {
+          "name": "enable_transform_interpolation",
+          "display_name": "Enable Transform Interpolation",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "enabled",
+          "display_name": "Enabled",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "friction",
+          "display_name": "Friction",
+          "category": "Physics Material",
+          "type": "f32"
+        },
+        {
+          "name": "generate_collision_events",
+          "display_name": "Generate Collision Events",
+          "category": "Simulation",
+          "type": "bool"
+        },
+        {
+          "name": "generate_overlap_events",
+          "display_name": "Generate Overlap Events",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "interface",
+          "display_name": "Interface",
+          "category": "Simulation",
+          "type": "SimulationInterface"
+        },
+        {
+          "name": "interpolation_method",
+          "display_name": "Interpolation Method",
+          "category": "Advanced",
+          "type": "InterpolationMethod"
+        },
+        {
+          "name": "max_delta_time",
+          "display_name": "Max Delta Time",
+          "category": "Simulation",
+          "type": "f32"
+        },
+        {
+          "name": "min_rotation_for_interpolation",
+          "display_name": "Min Rotation For Interpolation",
+          "category": "Advanced",
+          "type": "f32"
+        },
+        {
+          "name": "min_translation_for_interpolation",
+          "display_name": "Min Translation For Interpolation",
+          "category": "Advanced",
+          "type": "f32"
+        },
+        {
+          "name": "override_angular_velocity",
+          "display_name": "Override Angular Velocity",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "override_collision_preset",
+          "display_name": "Override Collision Preset",
+          "category": "Collision",
+          "type": "bool"
+        },
+        {
+          "name": "override_linear_velocity",
+          "display_name": "Override Linear Velocity",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "override_physics_material",
+          "display_name": "Override Physics Material",
+          "category": "Physics Material",
+          "type": "bool"
+        },
+        {
+          "name": "physics_material",
+          "display_name": "Physics Material",
+          "category": "Physics Material",
+          "type": "String"
+        },
+        {
+          "name": "restitution",
+          "display_name": "Restitution",
+          "category": "Physics Material",
+          "type": "f32"
+        },
+        {
+          "name": "simulate_physics",
+          "display_name": "Simulate Physics",
+          "category": "Simulation",
+          "type": "bool"
+        },
+        {
+          "name": "simulation_generates_hits",
+          "display_name": "Simulation Generates Hits",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "sleep_threshold",
+          "display_name": "Sleep Threshold",
+          "category": "Simulation",
+          "type": "f32"
+        },
+        {
+          "name": "sync_to_physics",
+          "display_name": "Sync To Physics",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "wake_on_collision",
+          "display_name": "Wake On Collision",
+          "category": "Simulation",
+          "type": "bool"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "RigidBodyComponent",
+      "properties": [
+        {
+          "name": "angular_damping",
+          "display_name": "Angular Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "angular_velocity",
+          "display_name": "Angular Velocity",
+          "category": "Motion",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "body_type",
+          "display_name": "Body Type",
+          "category": "Body",
+          "type": "BodyType"
+        },
+        {
+          "name": "can_sleep",
+          "display_name": "Can Sleep",
+          "category": "Body",
+          "type": "bool"
+        },
+        {
+          "name": "continuous_collision",
+          "display_name": "Continuous Collision",
+          "category": "Body",
+          "type": "bool"
+        },
+        {
+          "name": "enabled",
+          "display_name": "Enabled",
+          "category": "Body",
+          "type": "bool"
+        },
+        {
+          "name": "gravity_scale",
+          "display_name": "Gravity Scale",
+          "category": "Body",
+          "type": "f32"
+        },
+        {
+          "name": "linear_damping",
+          "display_name": "Linear Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "linear_velocity",
+          "display_name": "Linear Velocity",
+          "category": "Motion",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "lock_position_x",
+          "display_name": "Lock Position X",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_position_y",
+          "display_name": "Lock Position Y",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_position_z",
+          "display_name": "Lock Position Z",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_rotation_x",
+          "display_name": "Lock Rotation X",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_rotation_y",
+          "display_name": "Lock Rotation Y",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_rotation_z",
+          "display_name": "Lock Rotation Z",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "mass",
+          "display_name": "Mass",
+          "category": "Body",
+          "type": "f32"
+        }
+      ],
+      "methods": [
+        {
+          "name": "get_angular_damping",
+          "display_name": "Get Angular_damping",
+          "category": "Damping",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_angular_velocity",
+          "display_name": "Get Angular_velocity",
+          "category": "Motion",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_body_type",
+          "display_name": "Get Body_type",
+          "category": "Body",
+          "params": [],
+          "return_type": "BodyType",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_can_sleep",
+          "display_name": "Get Can_sleep",
+          "category": "Body",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_continuous_collision",
+          "display_name": "Get Continuous_collision",
+          "category": "Body",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_enabled",
+          "display_name": "Get Enabled",
+          "category": "Body",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_gravity_scale",
+          "display_name": "Get Gravity_scale",
+          "category": "Body",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_linear_damping",
+          "display_name": "Get Linear_damping",
+          "category": "Damping",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_linear_velocity",
+          "display_name": "Get Linear_velocity",
+          "category": "Motion",
+          "params": [],
+          "return_type": "[f32; 3]",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_position_x",
+          "display_name": "Get Lock_position_x",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_position_y",
+          "display_name": "Get Lock_position_y",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_position_z",
+          "display_name": "Get Lock_position_z",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_rotation_x",
+          "display_name": "Get Lock_rotation_x",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_rotation_y",
+          "display_name": "Get Lock_rotation_y",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_lock_rotation_z",
+          "display_name": "Get Lock_rotation_z",
+          "category": "Constraints",
+          "params": [],
+          "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_mass",
+          "display_name": "Get Mass",
+          "category": "Body",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_angular_damping",
+          "display_name": "Set Angular_damping",
+          "category": "Damping",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_angular_velocity",
+          "display_name": "Set Angular_velocity",
+          "category": "Motion",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_body_type",
+          "display_name": "Set Body_type",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "BodyType"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_can_sleep",
+          "display_name": "Set Can_sleep",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_continuous_collision",
+          "display_name": "Set Continuous_collision",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_enabled",
+          "display_name": "Set Enabled",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_gravity_scale",
+          "display_name": "Set Gravity_scale",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_linear_damping",
+          "display_name": "Set Linear_damping",
+          "category": "Damping",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_linear_velocity",
+          "display_name": "Set Linear_velocity",
+          "category": "Motion",
+          "params": [
+            {
+              "name": "value",
+              "type": "[f32; 3]"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_position_x",
+          "display_name": "Set Lock_position_x",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_position_y",
+          "display_name": "Set Lock_position_y",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_position_z",
+          "display_name": "Set Lock_position_z",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_rotation_x",
+          "display_name": "Set Lock_rotation_x",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_rotation_y",
+          "display_name": "Set Lock_rotation_y",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_lock_rotation_z",
+          "display_name": "Set Lock_rotation_z",
+          "category": "Constraints",
+          "params": [
+            {
+              "name": "value",
+              "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_mass",
+          "display_name": "Set Mass",
+          "category": "Body",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "RigidbodyComponent",
+      "properties": [
+        {
+          "name": "angular_damping",
+          "display_name": "Angular Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "angular_velocity",
+          "display_name": "Angular Velocity",
+          "category": "Velocity",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_angular_impulse",
+          "display_name": "Apply Angular Impulse",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_force",
+          "display_name": "Apply Force",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_force_position",
+          "display_name": "Apply Force Position",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_impulse",
+          "display_name": "Apply Impulse",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_impulse_position",
+          "display_name": "Apply Impulse Position",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "apply_torque",
+          "display_name": "Apply Torque",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "auto_compute_angular_velocity",
+          "display_name": "Auto Compute Angular Velocity",
+          "category": "Velocity",
+          "type": "bool"
+        },
+        {
+          "name": "auto_compute_linear_velocity",
+          "display_name": "Auto Compute Linear Velocity",
+          "category": "Velocity",
+          "type": "bool"
+        },
+        {
+          "name": "auto_update_constraints",
+          "display_name": "Auto Update Constraints",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "compute_velocity_from_displacement",
+          "display_name": "Compute Velocity From Displacement",
+          "category": "Velocity",
+          "type": "bool"
+        },
+        {
+          "name": "custom_gravity",
+          "display_name": "Custom Gravity",
+          "category": "Forces",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "default_angular_damping",
+          "display_name": "Default Angular Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "default_linear_damping",
+          "display_name": "Default Linear Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "density",
+          "display_name": "Density",
+          "category": "General",
+          "type": "f32"
+        },
+        {
+          "name": "disable_all_forces",
+          "display_name": "Disable All Forces",
+          "category": "Forces",
+          "type": "bool"
+        },
+        {
+          "name": "disable_animation_damping",
+          "display_name": "Disable Animation Damping",
+          "category": "Damping",
+          "type": "bool"
+        },
+        {
+          "name": "disable_collision",
+          "display_name": "Disable Collision",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "disable_pose_animation_damping",
+          "display_name": "Disable Pose Animation Damping",
+          "category": "Damping",
+          "type": "bool"
+        },
+        {
+          "name": "enable_gravity",
+          "display_name": "Enable Gravity",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "enable_locked_motions_override",
+          "display_name": "Enable Locked Motions Override",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "enable_sleeping",
+          "display_name": "Enable Sleeping",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "enable_sync_to_physics",
+          "display_name": "Enable Sync To Physics",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "enable_transform_interpolation",
+          "display_name": "Enable Transform Interpolation",
+          "category": "Advanced",
+          "type": "bool"
+        },
+        {
+          "name": "enabled",
+          "display_name": "Enabled",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "gravity_enabled",
+          "display_name": "Gravity Enabled",
+          "category": "Forces",
+          "type": "bool"
+        },
+        {
+          "name": "gravity_scale",
+          "display_name": "Gravity Scale",
+          "category": "Forces",
+          "type": "f32"
+        },
+        {
+          "name": "interpolation_method",
+          "display_name": "Interpolation Method",
+          "category": "Advanced",
+          "type": "InterpolationMethod"
+        },
+        {
+          "name": "linear_damping",
+          "display_name": "Linear Damping",
+          "category": "Damping",
+          "type": "f32"
+        },
+        {
+          "name": "linear_velocity",
+          "display_name": "Linear Velocity",
+          "category": "Velocity",
+          "type": "[f32; 3]"
+        },
+        {
+          "name": "lock_angular_x",
+          "display_name": "Lock Angular X",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_angular_y",
+          "display_name": "Lock Angular Y",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_angular_z",
+          "display_name": "Lock Angular Z",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_linear_x",
+          "display_name": "Lock Linear X",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_linear_y",
+          "display_name": "Lock Linear Y",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "lock_linear_z",
+          "display_name": "Lock Linear Z",
+          "category": "Constraints",
+          "type": "bool"
+        },
+        {
+          "name": "mass",
+          "display_name": "Mass",
+          "category": "General",
+          "type": "f32"
+        },
+        {
+          "name": "mass_scale",
+          "display_name": "Mass Scale",
+          "category": "General",
+          "type": "f32"
+        },
+        {
+          "name": "min_rotation_for_interpolation",
+          "display_name": "Min Rotation For Interpolation",
+          "category": "Advanced",
+          "type": "f32"
+        },
+        {
+          "name": "min_translation_for_interpolation",
+          "display_name": "Min Translation For Interpolation",
+          "category": "Advanced",
+          "type": "f32"
+        },
+        {
+          "name": "motion_type",
+          "display_name": "Motion Type",
+          "category": "General",
+          "type": "MotionType"
+        },
+        {
+          "name": "override_mass",
+          "display_name": "Override Mass",
+          "category": "General",
+          "type": "bool"
+        },
+        {
+          "name": "sleep_threshold",
+          "display_name": "Sleep Threshold",
+          "category": "Advanced",
+          "type": "f32"
+        },
+        {
+          "name": "wake_on_collision",
+          "display_name": "Wake On Collision",
+          "category": "Advanced",
+          "type": "bool"
+        }
+      ],
+      "methods": []
+    }
+  ]
+}
