@@ -30,8 +30,14 @@ as a git submodule at `plugins/vendor/physics_plugin`.
 | Events | Eleven events in Gamma's `physics` namespace, hookable from scripts |
 | Profiler | `Physics::*` scopes in the editor's flamegraph |
 
-It builds as a `cdylib` loaded by the editor's plugin manager and as an
-`rlib` (with the `builtin` feature) for statically linked hosts.
+The crate (`physics_plugin`) is the plugin's root crate, and its only one:
+`src/registrations.rs` is the one place it submits what it contributes (the
+five component classes, the simulation's component tick, the events offered
+to scripts and, with the `editor` feature, the editor provider). A game links
+it without `editor`, so it builds the components, the simulation and the
+asset models but no editor; the editor links it with `editor` and `builtin`.
+A DLL build (`editor` without `builtin`) is loaded by the editor's plugin
+manager through `export_plugin!`.
 
 ## Components
 
@@ -232,8 +238,8 @@ world; the simulation follows them through SceneDB's change journals.
   nothing: one full re-read rebuilds it.
 
 The component runtime only offers one world-wide hook per plugin (a
-`ComponentTickRegistration`), so `runtime.rs` registers a single driver and
-knows no component by name.
+`ComponentTickRegistration`), so `runtime.rs` has a single driver
+(`registrations.rs` registers it) and knows no component by name.
 
 ## Adding or changing a component
 
@@ -260,7 +266,11 @@ inventory::submit! {
 - `apply` runs on the simulation thread with `&mut Sim`: Rapier's sets, the
   owner-to-body map and typed per-behavior state (`sim.with_state::<T, _>`).
 - Declare events in the same file with `declare_events!`; they are registered
-  on the hub and offered to scripts automatically.
+  on the hub automatically. Add each to `component_events!` in
+  `src/registrations.rs` to offer it to scripts (a test checks every declared
+  event is offered).
+- A new component class is a `#[world_component]`; add it to
+  `submit_world_component!` in `src/registrations.rs`.
 - Push at most one result batch per run to `Output`, and apply it in
   `write_back` with `ctx.write_transform(...)`, which skips stale results.
 
@@ -273,8 +283,8 @@ that attach to them, colliders before the joints that connect bodies.
   ten idle seconds. A panic in a step restarts the simulation from the scene.
 - Fixed 60 Hz steps with an accumulator (at most five per run), so results do
   not depend on the frame rate.
-- `export_plugin!` shares the editor's profiler with this library, so the
-  `Physics::*` scopes appear in the flamegraph: `Tick`, `Moves`, `Apply`,
+- The `Physics::*` scopes appear in the editor's flamegraph (a DLL build's
+  `export_plugin!` shares the editor's profiler with this library): `Tick`, `Moves`, `Apply`,
   `Read` on the game thread; `Frame`, `Reconcile`, `Step`, `Collect`,
   `Publish` on the simulation thread. Plugins built before profiler sharing
   keep a private (never read) profiler.
@@ -285,9 +295,9 @@ This crate depends on workspace dependencies, so it builds as a member of the
 Pulsar-Native workspace:
 
 ```bash
-cargo check -p physics_plugin
-cargo test  -p physics_plugin
-cargo check -p physics_plugin --features builtin   # statically linked hosts
+cargo check -p physics_plugin                      # the game build (no editor)
+cargo check -p physics_plugin --features editor    # the editor build
+cargo test  -p physics_plugin --features editor
 ```
 
 Tests run the real component runtime against a SceneDB `World`: bodies fall
@@ -310,14 +320,16 @@ and an idle scene sends nothing to the simulation.
 
 | File | Role |
 |---|---|
-| `src/lib.rs` | Plugin entry point and editor registration |
+| `src/lib.rs` | Plugin entry point; the DLL editor plugin (`editor`) |
+| `src/registrations.rs` | Everything the plugin registers with the engine |
+| `src/builtin_provider.rs` | The editor provider (`editor`) |
 | `src/components/*.rs` | Each component, its behavior and its events |
 | `src/behavior.rs` | The `PhysicsBehavior` contract and `read_rows` |
 | `src/sim.rs` | The shared Rapier world and fixed-step loop |
 | `src/runtime.rs` | The driver: journals in, thread, results out |
 | `src/physics_events.rs` | The `physics` event namespace |
 | `src/math.rs` | `Transform` to Rapier conversions |
-| `src/file_types.rs` | `.physmat` and `.physlayers` |
+| `src/file_types.rs` | `.physmat`, `.physlayers` and `.physasset`: ids, templates, the editor's file types (`editor`) |
 | `src/assets/` | The asset formats as typed models: parsing, validation, repairs, presets and the physics the editors preview. Plain data, fully unit-tested |
 | `src/editors/common/` | The shared document (file, undo history, dirty state), panel chrome, fields and dock layout |
 | `src/editors/material/` | The Physics Material editor's panels |

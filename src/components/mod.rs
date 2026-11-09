@@ -1,8 +1,9 @@
 //! Physics World components defined by this plugin.
 //!
-//! Each class is registered with `#[register_world_component]`; the host sees
-//! it once `export_plugin!`'s world-runtime attach has run (Pulsar-Native#1083),
-//! so the classes are live components of the editor's `World`.
+//! Each class is a `#[world_component]`; `crate::registrations` registers
+//! them (with this crate as their origin, so the plugin gate skips them while
+//! a project disables the plugin). With the `editor` feature, [`definitions`]
+//! and [`factories`] are the property panel's "Add component" entries.
 
 mod character_controller;
 mod collider;
@@ -25,14 +26,18 @@ pub use force_field::{
 pub use joint::{JointComponent, JointKind, JOINT_BROKEN, JOINT_CLASS_NAME};
 pub use rigid_body::{BodyType, RigidBodyComponent, RIGID_BODY_CLASS_NAME, SLEEP, WAKE};
 
+#[cfg(feature = "editor")]
 use plugin_editor_api::{ComponentDefinition, ComponentFactory};
+#[cfg(feature = "editor")]
 use pulsar_reflection::EngineClass;
 
+#[cfg(feature = "editor")]
 fn factory<T: EngineClass + Default + 'static>() -> ComponentFactory {
     Box::new(|| Box::new(T::default()) as Box<dyn EngineClass>)
 }
 
 /// The property panel's "Add component" entries.
+#[cfg(feature = "editor")]
 pub fn definitions() -> Vec<ComponentDefinition> {
     let def = |id: &str, name: &str, description: &str| ComponentDefinition {
         id: id.into(),
@@ -71,6 +76,7 @@ pub fn definitions() -> Vec<ComponentDefinition> {
 }
 
 /// Default-instance factories keyed by class name.
+#[cfg(feature = "editor")]
 pub fn factories() -> Vec<(String, ComponentFactory)> {
     vec![
         (

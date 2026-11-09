@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use engine_class_derive::{engine_class, register_world_component};
+use engine_class_derive::{engine_class, world_component};
 use pulsar_reflection::Reflectable;
 use pulsar_scenedb::{component_id, Entity, World};
 use rapier3d::prelude::*;
@@ -113,7 +113,7 @@ impl Default for RigidBodyComponent {
     }
 }
 
-#[register_world_component]
+#[world_component]
 impl RigidBodyComponent {}
 
 // ---------------------------------------------------------------------------

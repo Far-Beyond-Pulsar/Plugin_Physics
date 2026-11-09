@@ -1,47 +1,68 @@
 #![recursion_limit = "512"]
 
-//! Physics plugin: physics asset file types, the physics components, and the
-//! Rapier simulation behind them.
+//! Physics plugin (`pulsar.physics`): physics asset file types, the physics
+//! components, and the Rapier simulation behind them.
 //!
-//! The plugin ships as a `cdylib` loaded by `plugin_manager`. Its components
-//! register through `#[register_world_component]`; `export_plugin!` attaches
-//! this library's world crates to the editor's runtime (Pulsar-Native#1083)
-//! so they reach the host World, and shares the editor's profiler.
+//! This crate is the plugin's root crate (its only crate): [`registrations`]
+//! is the one place it submits what it contributes, the runtime part always
+//! and the editor part with the `editor` feature. A game links the crate
+//! without `editor`, so it builds the components, the simulation and the
+//! asset models but no editor; the editor links it with `editor` (the
+//! asset editors, file types and editor provider). A DLL build (`editor`
+//! without `builtin`) exports [`PhysicsPlugin`] through `export_plugin!`.
 //!
-//! Each component's file owns its simulation behavior (see [`behavior`]);
-//! [`runtime`] drives them from SceneDB's change journals on a dedicated
-//! thread, and [`physics_events`] publishes what happens in the `physics`
+//! Each component's file owns its simulation behavior (see `behavior`);
+//! the runtime drives them from SceneDB's change journals on a dedicated
+//! thread, and `physics_events` publishes what happens in the `physics`
 //! event namespace.
 
+#[cfg(feature = "editor")]
 use plugin_editor_api::*;
 
 pub mod assets;
 mod behavior;
 mod components;
+#[cfg(feature = "editor")]
 mod editors;
 mod file_types;
 mod math;
 mod physics_events;
+pub mod registrations;
 mod runtime;
 mod sim;
 pub use components::*;
+#[cfg(feature = "editor")]
 pub use editors::{
     layers::EDITOR_ID as COLLISION_LAYERS_EDITOR_ID,
     material::EDITOR_ID as PHYSICS_MATERIAL_EDITOR_ID,
     rig::EDITOR_ID as SKELETAL_PHYSICS_EDITOR_ID,
 };
+#[cfg(feature = "editor")]
 pub use events::PluginEventBus;
 pub use file_types::{
+    collision_layers_template, physics_material_template, skeletal_physics_template,
     COLLISION_LAYERS_EXT, COLLISION_LAYERS_ID, COMBINE_MODES, PHYSICS_MATERIAL_EXT,
     PHYSICS_MATERIAL_ID, SKELETAL_PHYSICS_EXT, SKELETAL_PHYSICS_ID,
 };
 pub use runtime::{simulated_counts, wait_idle};
 
+// This plugin's descriptor (`pulsar-plugin.toml`): linking the crate installs
+// it; a project enables it or not (`pulsar_plugins`).
+pulsar_plugins::installed!("pulsar-plugin.toml");
+
+/// The plugin's editor provider (`crate::registrations` submits it).
+#[cfg(feature = "editor")]
+mod builtin_provider;
+
+/// The plugin as a DLL-loaded editor plugin (`export_plugin!`, a build with
+/// `editor` and without `builtin`) and the editor API linked hosts call.
+#[cfg(feature = "editor")]
 #[derive(Default)]
 pub struct PhysicsPlugin {
     events: PluginEventBus,
 }
 
+#[cfg(feature = "editor")]
 impl PluginRuntime for PhysicsPlugin {
     fn start(&mut self) -> &mut dyn PluginRuntime {
         // Initialize the physics plugin runtime here.
@@ -54,6 +75,7 @@ impl PluginRuntime for PhysicsPlugin {
     }
 }
 
+#[cfg(feature = "editor")]
 impl EditorPlugin for PhysicsPlugin {
     fn metadata(&self) -> PluginMetadata {
         PluginMetadata {
@@ -76,6 +98,7 @@ impl EditorPlugin for PhysicsPlugin {
     }
 }
 
+#[cfg(feature = "editor")]
 impl EditorPluginEditor for PhysicsPlugin {
     fn register_editors(&'static self, registry: &mut EditorFactoryRegistry) {
         for editor in editors::editors() {
@@ -89,6 +112,7 @@ impl EditorPluginEditor for PhysicsPlugin {
     }
 }
 
+#[cfg(feature = "editor")]
 impl PhysicsPlugin {
     /// The editor that opens `path`, by its extension.
     pub fn editor_for_path(path: &std::path::Path) -> Option<EditorId> {
@@ -103,6 +127,7 @@ impl PhysicsPlugin {
     }
 }
 
+#[cfg(feature = "editor")]
 impl PhysicsPlugin {
     /// Open `path` in the editor `editor_id` (for hosts that link this crate).
     /// `undo` is the host's undo service; with it, every view of a file
@@ -118,8 +143,11 @@ impl PhysicsPlugin {
     }
 }
 
+#[cfg(feature = "editor")]
 impl EditorPluginStatusbar for PhysicsPlugin {}
+#[cfg(feature = "editor")]
 impl EditorPluginAi for PhysicsPlugin {}
+#[cfg(feature = "editor")]
 impl EditorPluginComponents for PhysicsPlugin {
     fn component_definitions(&self) -> Vec<ComponentDefinition> {
         components::definitions()
@@ -129,19 +157,21 @@ impl EditorPluginComponents for PhysicsPlugin {
         components::factories()
     }
 }
+#[cfg(feature = "editor")]
 impl EditorPluginSubsystems for PhysicsPlugin {
     fn subsystems(&self) -> Vec<Box<dyn Subsystem>> {
         Vec::new()
     }
 }
 
-#[cfg(not(feature = "builtin"))]
+#[cfg(all(feature = "editor", not(feature = "builtin")))]
 export_plugin!(PhysicsPlugin);
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[cfg(feature = "editor")]
     #[test]
     fn registers_unique_physics_file_types() {
         let types = PhysicsPlugin::default().file_types();
@@ -157,6 +187,7 @@ mod tests {
         assert!(types.iter().all(|t| t.is_creatable()));
     }
 
+    #[cfg(feature = "editor")]
     #[test]
     fn every_component_is_a_registered_world_component_with_a_factory() {
         let defs = PhysicsPlugin::default().component_definitions();
@@ -180,6 +211,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "editor")]
     #[test]
     fn each_asset_type_opens_in_its_own_editor() {
         use std::path::Path;
@@ -210,8 +242,7 @@ mod tests {
 
     #[test]
     fn material_defaults_are_valid() {
-        let types = PhysicsPlugin::default().file_types();
-        let m = &types[0].default_content;
+        let m = &physics_material_template();
         assert!(m["friction"].as_f64().unwrap() >= 0.0);
         let r = m["restitution"].as_f64().unwrap();
         assert!((0.0..=1.0).contains(&r));
@@ -220,10 +251,3 @@ mod tests {
         }
     }
 }
-
-// This plugin's descriptor (`pulsar-plugin.toml`): linking the crate installs it.
-pulsar_plugins::installed!("pulsar-plugin.toml");
-
-/// The plugin's editor provider, submitted to the editor (origin-gated).
-#[cfg(feature = "builtin")]
-mod builtin_provider;
