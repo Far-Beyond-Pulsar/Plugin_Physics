@@ -8,16 +8,20 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use ui::dock::PanelView;
 
-/// Wraps the physics_plugin crate as a built-in provider: the `.physmat` and
-/// `.physlayers` file types with their editors (Physics Material and Collision
-/// Layers), and the physics components. Linking the crate is what registers
-/// the components, their simulation behaviors and the `physics::` events, so
-/// the simulation runs in every build of the editor and engine.
+/// Wraps the physics_plugin crate as a built-in provider: the `.physmat`,
+/// `.physlayers` and `.physasset` file types with their editors (Physics
+/// Material, Collision Layers, Skeletal Physics), and the physics components.
+/// `crate::registrations` submits it to the editor.
 pub struct PhysicsBuiltinProvider;
+
+impl PhysicsBuiltinProvider {
+    /// The provider's id ([`BuiltinEditorProvider::provider_id`]).
+    pub const ID: &'static str = "com.pulsar.physics";
+}
 
 impl BuiltinEditorProvider for PhysicsBuiltinProvider {
     fn provider_id(&self) -> &str {
-        "com.pulsar.physics"
+        Self::ID
     }
 
     fn file_types(&self) -> Vec<FileTypeDefinition> {
@@ -73,12 +77,5 @@ impl BuiltinEditorProvider for PhysicsBuiltinProvider {
             window,
             cx,
         )
-    }
-}
-
-plugin_manager::inventory::submit! {
-    plugin_manager::PluginEditorProvider {
-        origin: pulsar_plugins::origin!(),
-        create: || Arc::new(PhysicsBuiltinProvider),
     }
 }

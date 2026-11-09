@@ -536,7 +536,10 @@ fn after_steps(sim: &mut Sim, _seconds: f32, out: &mut Output) {
                     .to_cols_array_2d(),
                 ));
             }
-            batch.poses.push(RigPoseOut { instance, bones: owned });
+            batch.poses.push(RigPoseOut {
+                instance,
+                bones: owned,
+            });
         }
         batch.released = std::mem::take(&mut state.released);
     });
@@ -565,9 +568,7 @@ fn write_back(world: &mut World, part: Part, _ctx: &mut WriteCtx) {
 /// component no instance has, so the rig reads nothing.
 fn animator_component() -> pulsar_scenedb::ComponentId {
     struct NoAnimators;
-    skeletal_pose_access().map_or_else(component_id::<NoAnimators>, |access| {
-        (access.component)()
-    })
+    skeletal_pose_access().map_or_else(component_id::<NoAnimators>, |access| (access.component)())
 }
 
 inventory::submit! {

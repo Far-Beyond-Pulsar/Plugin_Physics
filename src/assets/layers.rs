@@ -1074,7 +1074,7 @@ mod tests {
 
     #[test]
     fn the_template_file_parses_to_the_default_asset() {
-        let template = &crate::file_types::file_types()[1].default_content;
+        let template = &crate::file_types::collision_layers_template();
         let (set, notes) = CollisionLayers::parse(&template.to_string()).unwrap();
         assert!(notes.is_empty());
         assert_eq!(set, CollisionLayers::default());

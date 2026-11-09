@@ -15,11 +15,13 @@
 //! * `other`: the other party (the thing hit, entered, or connected to),
 //!   or `0` when there is none.
 //!
-//! A component declares its events in its own file with [`declare_events!`];
-//! that both names them for the behavior code and puts them in the script
-//! editor's event list (through [`ComponentEventRegistration`]). The
-//! namespace rides in the event name (`physics::...`), which the script
-//! bridge and the hub both understand.
+//! A component declares its events in its own file with [`declare_events!`],
+//! which names them for the behavior code and lists them for the simulation
+//! (`register_all`). The crate's registrations (`crate::registrations`) put
+//! each in the script editor's event list (a
+//! `pulsar_world_registry::ComponentEventRegistration`). The namespace rides
+//! in the event name (`physics::...`), which the script bridge and the hub
+//! both understand.
 
 use std::collections::HashMap;
 
@@ -84,30 +86,15 @@ impl EventSpec {
 /// }
 /// ```
 ///
-/// Each becomes an [`EventSpec`] constant, is registered on every hub the
-/// simulation runs against, and is offered to scripts.
+/// Each becomes an [`EventSpec`] constant and is registered on every hub the
+/// simulation runs against; `crate::registrations` offers it to scripts.
 #[macro_export]
 macro_rules! declare_events {
     ($($(#[$meta:meta])* $vis:vis const $ident:ident = ($class:expr, $name:literal);)*) => {$(
         $(#[$meta])*
         $vis const $ident: $crate::physics_events::EventSpec =
             $crate::physics_events::EventSpec { class: $class, name: $name };
-        const _: () = {
-            fn descriptor() -> ::pulsar_events::gamma::EventDescriptor {
-                $ident.descriptor()
-            }
-            fn declaration() -> ::pulsar_world_registry::pulsar_script_vm::EventDecl {
-                $ident.declaration()
-            }
-            ::pulsar_world_registry::inventory::submit! {
-                ::pulsar_world_registry::ComponentEventRegistration {
-                    class_name: $class,
-                    descriptor,
-                    declaration,
-                }
-            }
-            ::inventory::submit! { $ident }
-        };
+        ::inventory::submit! { $ident }
     )*};
 }
 

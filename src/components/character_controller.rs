@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use engine_class_derive::{engine_class, register_world_component};
+use engine_class_derive::{engine_class, world_component};
 use pulsar_scenedb::{component_id, Entity, World};
 use rapier3d::control::{CharacterAutostep, CharacterLength, KinematicCharacterController};
 use rapier3d::parry::query::DefaultQueryDispatcher;
@@ -87,7 +87,7 @@ impl CharacterControllerComponent {
     }
 }
 
-#[register_world_component]
+#[world_component]
 impl CharacterControllerComponent {}
 
 // ---------------------------------------------------------------------------

@@ -6,8 +6,9 @@
 //! mean to Rapier; the driver only moves data between SceneDB and the
 //! behaviors.
 //!
-//! The component runtime ticks one hand-written [`ComponentTickRegistration`]
-//! per frame with the whole `World`. That is the hook plugins have for a
+//! The component runtime ticks one hand-written
+//! `pulsar_world_registry::ComponentTickRegistration` per frame with the
+//! whole `World` ([`tick`], registered in `crate::registrations`). That is the hook plugins have for a
 //! world-wide pass; per-instance callbacks (`#[register_component_runtime]`)
 //! cannot see the other rows that colliders, joints and force fields relate
 //! to.
@@ -32,8 +33,8 @@
 //! # The simulation thread
 //!
 //! One thread per `World`, named `Pulsar-Physics`. Its scopes (`Physics::*`)
-//! are recorded in the editor's profiler: `export_plugin!` shares the host
-//! profiler with this library when it loads.
+//! are recorded in the editor's profiler (a DLL build's `export_plugin!`
+//! shares the host profiler with this library when it loads).
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -43,13 +44,12 @@ use std::time::{Duration, Instant};
 
 use pulsar_events::EventHub;
 use pulsar_scenedb::{
-    component_id, ChangeCursor, ChangeRead, ComponentChange, ComponentChangeKind, Entity, World,
+    ChangeCursor, ChangeRead, ComponentChange, ComponentChangeKind, Entity, World,
 };
 use pulsar_world_registry::pulsar_scene_model::{ComponentOwner, Transform};
-use pulsar_world_registry::{inventory, ComponentRuntimeState, ComponentTickRegistration};
+use pulsar_world_registry::ComponentRuntimeState;
 
 use crate::behavior::{behaviors, Output, Part, PhysEvent, Touched, WriteCtx};
-use crate::components::{RigidBodyComponent, RIGID_BODY_CLASS_NAME};
 use crate::physics_events::{self, EventIds};
 use crate::sim::Sim;
 
@@ -229,10 +229,12 @@ fn key_of(world: &World) -> usize {
 }
 
 // ---------------------------------------------------------------------------
-// The component-runtime registration
+// The component-runtime tick
 // ---------------------------------------------------------------------------
 
-fn tick(
+/// One frame of the driver over the whole `World`: what
+/// `crate::registrations` registers as the physics component tick.
+pub(crate) fn tick(
     world: &mut World,
     events: &EventHub,
     delta_seconds: f32,
@@ -280,18 +282,6 @@ fn tick(
     let seq = shared.submit(parts, delta_seconds);
     for owner in &moved {
         streams.fences.insert(*owner, seq);
-    }
-}
-
-inventory::submit! {
-    ComponentTickRegistration {
-        type_name: "physics_plugin::driver",
-        class_name: RIGID_BODY_CLASS_NAME,
-        handler_events: &[],
-        component_type: component_id::<RigidBodyComponent>,
-        tick,
-        // Removal is seen through the journals, not through lifecycle sets.
-        end_play: None,
     }
 }
 
@@ -464,6 +454,7 @@ mod tests {
     use super::*;
     use crate::components::{
         BodyType, CharacterControllerComponent, ColliderComponent, JointComponent, JointKind,
+        RigidBodyComponent,
     };
     use pulsar_events::gamma::{Channel, DynValue, SubscribeOptions};
     use pulsar_scenedb::Component;

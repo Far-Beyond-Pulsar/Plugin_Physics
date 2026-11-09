@@ -931,7 +931,7 @@ mod tests {
         let (m, notes) = PhysicsMaterial::parse(&PhysicsMaterial::default().to_text()).unwrap();
         assert!(notes.is_empty());
         assert_eq!(m, PhysicsMaterial::default());
-        let template = &crate::file_types::file_types()[0].default_content;
+        let template = &crate::file_types::physics_material_template();
         let from_template = PhysicsMaterial::parse(&template.to_string()).unwrap().0;
         assert_eq!(from_template, PhysicsMaterial::default());
     }
