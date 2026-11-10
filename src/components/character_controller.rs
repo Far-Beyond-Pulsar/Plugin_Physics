@@ -120,7 +120,7 @@ impl CharacterControllerComponent {
             max_slope_climb_angle: self.slope_limit_degrees.to_radians(),
             min_slope_slide_angle: self.slope_limit_degrees.to_radians(),
             snap_to_ground: (self.snap_to_ground > 0.0)
-                .then(|| CharacterLength::Absolute(self.snap_to_ground)),
+                .then_some(CharacterLength::Absolute(self.snap_to_ground)),
             ..KinematicCharacterController::default()
         }
     }

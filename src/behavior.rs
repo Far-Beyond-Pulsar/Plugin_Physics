@@ -202,10 +202,7 @@ pub fn read_rows<C: Component + Clone>(
     keep: impl Fn(&C) -> bool,
 ) -> Option<Rows<C>> {
     read_rows_with(world, touched, component_id::<C>(), |world, instance| {
-        world
-            .get::<C>(instance)
-            .filter(|cfg| keep(cfg))
-            .map(|cfg| cfg.clone())
+        world.get::<C>(instance).filter(|cfg| keep(cfg)).cloned()
     })
 }
 

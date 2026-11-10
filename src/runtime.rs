@@ -487,7 +487,7 @@ mod tests {
         for _ in 0..(seconds * 60.0) as usize {
             tick_live_components(world, hub, 1.0 / 60.0, 1, state);
             wait_idle(world);
-            hub.flush(pulsar_events::FlushPoint::AfterPhysics);
+            hub.flush(pulsar_events::FlushPoint::AfterSystems);
         }
     }
 

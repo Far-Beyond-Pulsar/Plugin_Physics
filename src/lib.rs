@@ -46,6 +46,9 @@ pub use file_types::{
 };
 pub use runtime::{simulated_counts, wait_idle};
 
+#[cfg(test)]
+mod golden_metadata;
+
 // This plugin's descriptor (`pulsar-plugin.toml`): linking the crate installs
 // it; a project enables it or not (`pulsar_plugins`).
 pulsar_plugins::installed!("pulsar-plugin.toml");

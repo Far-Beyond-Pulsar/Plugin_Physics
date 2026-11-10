@@ -30,10 +30,20 @@ as a git submodule at `plugins/vendor/physics_plugin`.
 | Events | Eleven events in Gamma's `physics` namespace, hookable from scripts |
 | Profiler | `Physics::*` scopes in the editor's flamegraph |
 
-The crate (`physics_plugin`) is the plugin's root crate, and its only one:
-`src/registrations.rs` is the one place it submits what it contributes (the
-five component classes, the simulation's component tick, the events offered
-to scripts and, with the `editor` feature, the editor provider). A game links
+The crate (`physics_plugin`) is the plugin's root crate: `src/registrations.rs`
+is the one place it submits what it contributes (the component classes, the
+water hitbox rows, the simulation's component tick, the events offered to
+scripts and, with the `editor` feature, the editor provider). Beside it,
+`api/` (`physics_api`) is the plugin's contract other plugins read: the
+`.physasset` skeletal physics schema (data only; the animation plugin's editor
+draws rigs and checks bone edits against it).
+
+`src/components/legacy` holds the first physics model, `PhysicsComponent` and
+`RigidbodyComponent` (moved from Pulsar-Native's `pulsar_physics`,
+Pulsar-Native#1605). Levels still carry them and a `PhysicsComponent` on the
+`WaterSim` channel pushes simulated water (its `WaterHitboxSourceRow`, under
+the water plugin's api), but the simulation reads the five components above;
+they go once `level_migrate` moves levels to them. A game links
 it without `editor`, so it builds the components, the simulation and the
 asset models but no editor; the editor links it with `editor` and `builtin`.
 A DLL build (`editor` without `builtin`) is loaded by the editor's plugin

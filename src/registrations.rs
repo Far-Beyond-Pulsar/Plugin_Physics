@@ -22,7 +22,26 @@ pulsar_world_registry::submit_world_component!(
     JointComponent,
     CharacterControllerComponent,
     ForceFieldComponent,
+    legacy::PhysicsComponent,
+    legacy::RigidbodyComponent,
 );
+
+// ── Scene rows ──────────────────────────────────────────────────────────────
+
+// Bodies that push simulated water: each `PhysicsComponent` on the
+// `WaterSim` channel derives a hitbox source row under water's api
+// (`helio_water_api::WATER_HITBOX_SOURCES_BUFFER`), which the water plugin's
+// join reads. Physics only provides the rows; it has no join of its own.
+inventory::submit! {
+    engine_backend::scene::SceneRowsRegistration {
+        origin: pulsar_plugins::origin!(),
+        name: "physics.water_hitboxes",
+        register_columns: |store, device| {
+            crate::legacy::WaterHitboxSourceRow::register_gpu_columns_growable(store, 64, device);
+        },
+        derivation: None,
+    }
+}
 
 // ── Simulation ──────────────────────────────────────────────────────────────
 
@@ -101,6 +120,8 @@ mod tests {
             JOINT_CLASS_NAME,
             CHARACTER_CONTROLLER_CLASS_NAME,
             FORCE_FIELD_CLASS_NAME,
+            "PhysicsComponent",
+            "RigidbodyComponent",
         ] {
             assert!(
                 pulsar_world_registry::component_id_for_class(class).is_some(),

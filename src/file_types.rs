@@ -1,9 +1,8 @@
 //! Physics asset file types: their ids, extensions and new-file contents,
 //! and (with the `editor` feature) the editor's file type definitions.
 //!
-//! Default content mirrors `pulsar_physics`'s `MaterialPhysicsProps` defaults
-//! (friction 0.4, restitution 0.2) so a new material behaves like an
-//! unauthored component.
+//! A new material holds the physics defaults (`assets::material`), so it
+//! behaves like an unauthored component.
 
 #[cfg(feature = "editor")]
 use plugin_editor_api::{FileStructure, FileTypeDefinition, FileTypeId};
@@ -28,8 +27,8 @@ pub const COMBINE_MODES: [&str; 4] = ["average", "min", "multiply", "max"];
 pub fn physics_material_template() -> Value {
     json!({
         "version": 1,
-        "friction": 0.4,
-        "restitution": 0.2,
+        "friction": crate::assets::material::DEFAULT_FRICTION,
+        "restitution": crate::assets::material::DEFAULT_RESTITUTION,
         "friction_combine": "average",
         "restitution_combine": "average",
         "density": 1.0,

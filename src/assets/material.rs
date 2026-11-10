@@ -1,9 +1,9 @@
 //! `.physmat`: a physics material.
 //!
 //! Friction, restitution and density, how each combines with the surface it
-//! touches, and authoring metadata (a surface type and notes). The numbers
-//! mirror `pulsar_physics`'s `MaterialPhysicsProps`, whose defaults are
-//! friction 0.4 and restitution 0.2.
+//! touches, and authoring metadata (a surface type and notes). Its defaults
+//! ([`DEFAULT_FRICTION`], [`DEFAULT_RESTITUTION`]) are every physics
+//! default's: a new `.physmat` and an unauthored component behave alike.
 //!
 //! The model also owns the physics the editor previews: Rapier's combine
 //! rules, the height of each bounce, and when a block starts to slide. They
@@ -15,6 +15,11 @@ use serde_json::{json, Map, Value};
 use super::{Asset, Issue, Severity};
 
 pub const SCHEMA_VERSION: u32 = 1;
+
+/// Friction of a surface nobody authored.
+pub const DEFAULT_FRICTION: f32 = 0.4;
+/// Restitution of a surface nobody authored.
+pub const DEFAULT_RESTITUTION: f32 = 0.2;
 
 /// Standard gravity, m/s².
 pub const GRAVITY: f32 = 9.806_65;
@@ -229,8 +234,8 @@ impl Default for PhysicsMaterial {
     fn default() -> Self {
         Self {
             version: SCHEMA_VERSION,
-            friction: 0.4,
-            restitution: 0.2,
+            friction: DEFAULT_FRICTION,
+            restitution: DEFAULT_RESTITUTION,
             friction_combine: CombineRule::Average,
             restitution_combine: CombineRule::Average,
             density: 1.0,
@@ -264,14 +269,14 @@ impl MaterialFix {
                 m.friction = if m.friction.is_finite() {
                     m.friction.max(0.0)
                 } else {
-                    0.4
+                    DEFAULT_FRICTION
                 };
             }
             MaterialFix::ClampRestitution => {
                 m.restitution = if m.restitution.is_finite() {
                     m.restitution.clamp(0.0, 1.0)
                 } else {
-                    0.2
+                    DEFAULT_RESTITUTION
                 };
             }
             MaterialFix::ResetDensity => m.density = 1.0,

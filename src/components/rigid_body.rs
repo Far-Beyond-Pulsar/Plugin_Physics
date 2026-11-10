@@ -25,21 +25,16 @@ use crate::sim::Sim;
 pub const RIGID_BODY_CLASS_NAME: &str = "RigidBodyComponent";
 
 /// How a body takes part in the simulation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Reflectable, Default)]
 pub enum BodyType {
     /// Moved by forces, gravity and collisions.
+    #[default]
     Dynamic,
     /// Follows its object's `Transform`; pushes dynamic bodies but is never
     /// pushed back.
     Kinematic,
     /// Never moves; collides with everything else.
     Static,
-}
-
-impl Default for BodyType {
-    fn default() -> Self {
-        Self::Dynamic
-    }
 }
 
 #[engine_class(category = "Physics", clone, debug, serialize, deserialize)]
