@@ -6,7 +6,13 @@ id = "pulsar.physics"
 name = "Physics"
 description = "Rigid bodies, colliders and joints (Rapier), physics materials and collision layers, and their editors"
 enabled_by_default = true
-requires = []
+provides = [
+    { id = "pulsar.physics.api", kind = "api", members = ["physics_api"], version = 1 },
+]
+requires = [
+    { id = "pulsar.animation.api", optional = true },
+    { id = "pulsar.water.api", optional = true },
+]
 
 # The plugin's root crate (the package in this directory): the one place it
 # registers everything it contributes. A game links it without its `editor`
