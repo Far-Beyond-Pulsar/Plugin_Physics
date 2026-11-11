@@ -17,6 +17,7 @@ builtin = []
 # without it.
 editor = [
     "dep:plugin_manager",
+    "dep:ui_level_editor",
     "dep:ui",
     "dep:gpui-ce",
     "dep:plugin_editor_api",
@@ -24,6 +25,8 @@ editor = [
 ]
 
 [dependencies]
+# Its World Settings fields (`ui_level_editor::extend::WorldSettingField`, with `editor`).
+ui_level_editor = { workspace = true, optional = true }
 # The plugin's descriptor and its registrations' origin.
 pulsar_plugins = { workspace = true }
 plugin_manager = { workspace = true, optional = true }
@@ -35,8 +38,8 @@ ui = { workspace = true, optional = true }
 plugin_editor_api = { workspace = true, optional = true }
 engine_class_derive = { workspace = true }
 # The skeletal rig finds a mesh's physics asset through the project's file
-# index (`open_project_file_index`), which is `engine_fs`'s editor feature.
-engine_fs = { workspace = true, features = ["editor"] }
+# index (`engine_fs::open_project_file_index`).
+engine_fs = { workspace = true }
 engine_state = { workspace = true }
 # Animated skeletons are the animation plugin's: the rig reads and drives
 # them through the core contract (`helio_component::skinning`).
@@ -70,3 +73,6 @@ tracing = { workspace = true }
 # Headless rendering of the editors (`gpui::TestAppContext`, `#[gpui::test]`),
 # the same set-up the UI crate's own tests use. Only test builds see it.
 gpui-ce = { workspace = true, features = ["test-support"] }
+
+[lints]
+workspace = true

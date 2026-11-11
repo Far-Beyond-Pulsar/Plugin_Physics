@@ -92,18 +92,49 @@ component_events!(
 // ── Editor ──────────────────────────────────────────────────────────────────
 
 /// What the editor adds: the physics asset editors and file types, and the
-/// components' "Add component" entries, as a linked editor provider.
+/// components' "Add component" entries, as a linked editor provider; and the
+/// level's physics settings in World Settings.
 #[cfg(feature = "editor")]
 mod editor {
     use std::sync::Arc;
 
     use crate::builtin_provider::PhysicsBuiltinProvider;
+    use ui_level_editor::extend::{WorldSettingField, WorldSettingKind};
 
     inventory::submit! {
         plugin_manager::PluginEditorProvider {
             origin: pulsar_plugins::origin!(),
             id: PhysicsBuiltinProvider::ID,
             create: || Arc::new(PhysicsBuiltinProvider),
+        }
+    }
+
+    // The level's physics settings, kept under the keys levels have always
+    // stored them by.
+    inventory::submit! {
+        WorldSettingField {
+            origin: pulsar_plugins::origin!(),
+            id: "physics.enabled",
+            section: "Physics",
+            label: "Physics Enabled",
+            order: 0,
+            key: "physics_enabled",
+            kind: WorldSettingKind::Toggle { default: true },
+        }
+    }
+
+    inventory::submit! {
+        WorldSettingField {
+            origin: pulsar_plugins::origin!(),
+            id: "physics.gravity",
+            section: "Physics",
+            label: "Gravity",
+            order: 10,
+            key: "gravity",
+            kind: WorldSettingKind::Vector3 {
+                default: [0.0, -9.81, 0.0],
+                unit: "m/s²",
+            },
         }
     }
 }

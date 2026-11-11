@@ -94,7 +94,7 @@ impl<A: Asset> Document<A> {
 
     fn load_from_disk(&mut self) {
         let Some(path) = &self.path else { return };
-        match std::fs::read_to_string(path) {
+        match engine_fs::virtual_fs::read_to_string(path) {
             Ok(text) => match A::parse(&text) {
                 Ok((asset, notes)) => {
                     self.asset = asset;
@@ -106,7 +106,7 @@ impl<A: Asset> Document<A> {
                 }
             },
             // A file that doesn't exist yet is a new asset.
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) if !engine_fs::virtual_fs::exists(path).unwrap_or(true) => {}
             Err(error) => self.unreadable = Some(error.to_string()),
         }
     }
@@ -265,7 +265,7 @@ impl<A: Asset> Document<A> {
         if self.unreadable.is_some() {
             return;
         }
-        match std::fs::write(&path, self.asset.to_text()) {
+        match engine_fs::virtual_fs::write_file(&path, self.asset.to_text().as_bytes()) {
             Ok(()) => {
                 lock(&self.history).mark_saved();
                 self.status = Some(Status::Saved);
