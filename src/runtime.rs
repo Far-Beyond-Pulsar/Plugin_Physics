@@ -6,14 +6,14 @@
 //! mean to Rapier; the driver only moves data between SceneDB and the
 //! behaviors.
 //!
-//! The component runtime ticks one hand-written
-//! `pulsar_world_registry::ComponentTickRegistration` per frame with the
-//! whole `World` ([`tick`], registered in `crate::registrations`). That is the hook plugins have for a
-//! world-wide pass; per-instance callbacks (`#[register_component_runtime]`)
+//! The driver is one system of the rigid body class
+//! (`pulsar_world_registry::System`, [`run`], registered in
+//! `crate::registrations`) run once a frame with the whole `World`. That is
+//! the hook plugins have for a world-wide pass; per-instance callbacks (`#[register_component_runtime]`)
 //! cannot see the other rows that colliders, joints and force fields relate
 //! to.
 //!
-//! # Per frame, on the game thread (`tick`)
+//! # Per frame, on the game thread (`run`)
 //!
 //! 1. **Moves**: the `Transform` journal says which objects changed; the
 //!    ones whose new value is not what physics last wrote were moved by
@@ -47,7 +47,7 @@ use pulsar_scenedb::{
     ChangeCursor, ChangeRead, ComponentChange, ComponentChangeKind, Entity, World,
 };
 use pulsar_world_registry::pulsar_scene_model::{ComponentOwner, Transform};
-use pulsar_world_registry::ComponentRuntimeState;
+use pulsar_world_registry::SystemContext;
 
 use crate::behavior::{behaviors, Output, Part, PhysEvent, Touched, WriteCtx};
 use crate::physics_events::{self, EventIds};
@@ -218,8 +218,8 @@ fn publish(shared: &Shared, output: Output, seq: u64) {
     outbox.events.drain(..excess);
 }
 
-/// One simulation per `World`, keyed by the world's address: tick
-/// registrations are plain function pointers and carry no session state. A
+/// One simulation per `World`, keyed by the world's address: systems
+/// are plain function pointers and carry no session state. A
 /// reused address starts from a stale session; its first read is a full
 /// rescan that replaces whatever the old one knew.
 static SESSIONS: LazyLock<Mutex<HashMap<usize, Session>>> = LazyLock::new(Mutex::default);
@@ -229,20 +229,16 @@ fn key_of(world: &World) -> usize {
 }
 
 // ---------------------------------------------------------------------------
-// The component-runtime tick
+// The system
 // ---------------------------------------------------------------------------
 
-/// One frame of the driver over the whole `World`: what
-/// `crate::registrations` registers as the physics component tick.
-pub(crate) fn tick(
-    world: &mut World,
-    events: &EventHub,
-    delta_seconds: f32,
-    _previous: &HashMap<Entity, Entity>,
-    _current: &mut HashMap<Entity, Entity>,
-    _runtime: &mut ComponentRuntimeState,
-) {
+/// One frame of the driver over the whole `World`: the `pulsar.physics.step`
+/// system of the rigid body class (`crate::registrations`).
+pub(crate) fn run(ctx: &mut SystemContext<'_>) {
     profiling::profile_scope!("Physics::Tick");
+    let world: &mut World = &mut *ctx.world;
+    let events: &EventHub = ctx.events;
+    let delta_seconds = ctx.delta_seconds;
     let key = key_of(world);
     let mut sessions = lock(&SESSIONS);
     let now = Instant::now();
@@ -459,7 +455,7 @@ mod tests {
     use pulsar_events::gamma::{Channel, DynValue, SubscribeOptions};
     use pulsar_scenedb::Component;
     use pulsar_world_registry::pulsar_scene_model::attachments::{self, NewInstance};
-    use pulsar_world_registry::tick_live_components;
+    use pulsar_world_registry::{tick_live_components, ComponentRuntimeState};
     use std::sync::atomic::AtomicUsize;
 
     /// A component instance entity attached to `owner`.
