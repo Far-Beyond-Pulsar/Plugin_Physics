@@ -45,6 +45,10 @@ component_events!(
     BODY_EXITED,
 );
 
+/// The simulation: one world-wide system a frame, after the component
+/// lifecycles.
+const STEP: System = System::new("pulsar.physics.step", crate::runtime::run).after(&[COMPONENTS]);
+
 /// Everything the runtime part registers: the component classes (the rigid
 /// body's with the simulation step), the water hitbox rows.
 pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
@@ -56,9 +60,7 @@ pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
     // through lifecycle sets.
     p.components()
         .class::<RigidBodyComponent>(ClassSpec {
-            systems: &[
-                System::new("pulsar.physics.step", crate::runtime::run).after(&[COMPONENTS]),
-            ],
+            systems: &[STEP],
             ..ClassSpec::default()
         })
         .class::<ColliderComponent>(ClassSpec::default())

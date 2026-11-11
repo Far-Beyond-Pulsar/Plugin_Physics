@@ -7,6 +7,7 @@ name = "Physics"
 description = "Rigid bodies, colliders and joints (Rapier), physics materials and collision layers, and their editors"
 enabled_by_default = true
 provides = [
+    { id = "pulsar.physics.classes", kind = "class", members = ["RigidBodyComponent", "ColliderComponent", "JointComponent", "CharacterControllerComponent", "ForceFieldComponent", "PhysicsComponent", "RigidbodyComponent"], version = 1 },
     { id = "pulsar.physics.api", kind = "api", members = ["physics_api"], version = 1 },
 ]
 requires = [
