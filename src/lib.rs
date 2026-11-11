@@ -195,7 +195,8 @@ mod tests {
     fn every_component_is_a_registered_world_component_with_a_factory() {
         let defs = PhysicsPlugin::default().component_definitions();
         let factories = PhysicsPlugin::default().component_factories();
-        assert_eq!(defs.len(), 5);
+        assert_eq!(defs.len(), components::definitions().len());
+        assert_eq!(defs.len(), 7);
         for def in &defs {
             assert!(
                 pulsar_world_registry::component_id_for_class(&def.id).is_some(),
