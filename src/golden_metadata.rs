@@ -39,7 +39,7 @@ const SNAPSHOT_PATH: &str = concat!(
 /// binary also links are the engine's to snapshot, not this file's.
 fn own_classes_snapshot() -> serde_json::Value {
     let own: std::collections::BTreeSet<&'static str> =
-        pulsar_world_registry::inventory::iter::<pulsar_world_registry::WorldComponentRegistration>
+        pulsar_plugins::built::<pulsar_world_registry::WorldComponentRegistration>()
             .into_iter()
             .filter(|registration| registration.origin == env!("CARGO_PKG_NAME"))
             .map(|registration| registration.class_name)

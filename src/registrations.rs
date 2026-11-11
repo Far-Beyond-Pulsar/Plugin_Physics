@@ -1,5 +1,5 @@
-//! What the physics plugin registers: the one place it submits its
-//! contributions, grouped by the engine seam each plugs into. The runtime
+//! What the physics plugin registers: the one place it registers its
+//! contributions (`build`, called by the root's `build`), grouped by the engine seam each plugs into. The runtime
 //! part is what a game links; the editor part comes with the `editor`
 //! feature.
 //!
@@ -9,60 +9,14 @@
 //! (`physics_events::EventSpec`, through `declare_events!`); this module
 //! only hands the plugin's contributions to the engine.
 
-use pulsar_scenedb::component_id;
-use pulsar_world_registry::{ComponentEventRegistration, ComponentTickRegistration};
+use engine_backend::scene::{ClassSpec, ComponentsBuilder};
+use pulsar_world_registry::{systems::COMPONENTS, ComponentEventRegistration, System};
 
 use crate::components::*;
 
-// ── Component classes ───────────────────────────────────────────────────────
-
-pulsar_world_registry::submit_world_component!(
-    RigidBodyComponent,
-    ColliderComponent,
-    JointComponent,
-    CharacterControllerComponent,
-    ForceFieldComponent,
-    legacy::PhysicsComponent,
-    legacy::RigidbodyComponent,
-);
-
-// ── Scene rows ──────────────────────────────────────────────────────────────
-
-// Bodies that push simulated water: each `PhysicsComponent` on the
-// `WaterSim` channel derives a hitbox source row under water's api
-// (`helio_water_api::WATER_HITBOX_SOURCES_BUFFER`), which the water plugin's
-// join reads. Physics only provides the rows; it has no join of its own.
-inventory::submit! {
-    engine_backend::scene::SceneRowsRegistration {
-        origin: pulsar_plugins::origin!(),
-        name: "physics.water_hitboxes",
-        register_columns: |store, device| {
-            crate::legacy::WaterHitboxSourceRow::register_gpu_columns_growable(store, 64, device);
-        },
-        derivation: None,
-    }
-}
-
-// ── Simulation ──────────────────────────────────────────────────────────────
-
-// The driver: one world-wide tick a frame moves SceneDB's changes to the
-// simulation thread and its results back (`crate::runtime`).
-inventory::submit! {
-    ComponentTickRegistration {
-        type_name: "physics_plugin::driver",
-        class_name: RIGID_BODY_CLASS_NAME,
-        handler_events: &[],
-        component_type: component_id::<RigidBodyComponent>,
-        tick: crate::runtime::tick,
-        // Removal is seen through the journals, not through lifecycle sets.
-        end_play: None,
-    }
-}
-
-// ── Events ──────────────────────────────────────────────────────────────────
-
 /// Offers each declared physics event (`declare_events!`) to scripts: its
-/// Gamma descriptor and its script-side declaration.
+/// Gamma descriptor and its script-side declaration. Class-scoped, so they
+/// are link-time registrations.
 macro_rules! component_events {
     ($($event:ident),* $(,)?) => {$(
         inventory::submit! {
@@ -74,6 +28,8 @@ macro_rules! component_events {
         }
     )*};
 }
+
+// ── Events ──────────────────────────────────────────────────────────────────
 
 component_events!(
     SLEEP,
@@ -89,7 +45,51 @@ component_events!(
     BODY_EXITED,
 );
 
-// ── Editor ──────────────────────────────────────────────────────────────────
+/// The simulation: one world-wide system a frame, after the component
+/// lifecycles.
+const STEP: System = System::new("pulsar.physics.step", crate::runtime::run).after(&[COMPONENTS]);
+
+/// Everything the runtime part registers: the component classes (the rigid
+/// body's with the simulation step), the water hitbox rows.
+pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
+    // ── Component classes ───────────────────────────────────────────────────
+
+    // The driver is the rigid body class's system: one world-wide step a
+    // frame moves SceneDB's changes to the simulation thread and its results
+    // back (`crate::runtime`). Removal is seen through the journals, not
+    // through lifecycle sets.
+    p.components()
+        .class::<RigidBodyComponent>(ClassSpec {
+            systems: &[STEP],
+            ..ClassSpec::default()
+        })
+        .class::<ColliderComponent>(ClassSpec::default())
+        .class::<JointComponent>(ClassSpec::default())
+        .class::<CharacterControllerComponent>(ClassSpec::default())
+        .class::<ForceFieldComponent>(ClassSpec::default())
+        .class::<legacy::PhysicsComponent>(ClassSpec::default())
+        .class::<legacy::RigidbodyComponent>(ClassSpec::default());
+
+    // ── Scene rows ──────────────────────────────────────────────────────────
+
+    // Bodies that push simulated water: each `PhysicsComponent` on the
+    // `WaterSim` channel derives a hitbox source row under water's api
+    // (`helio_water_api::WATER_HITBOX_SOURCES_BUFFER`), which the water plugin's
+    // join reads. Physics only provides the rows; it has no join of its own.
+    p.add(engine_backend::scene::SceneRowsRegistration {
+        origin: p.origin(),
+        name: "physics.water_hitboxes",
+        register_columns: |store, device| {
+            crate::legacy::WaterHitboxSourceRow::register_gpu_columns_growable(store, 64, device);
+        },
+        derivation: None,
+    });
+
+    // ── Editor ──────────────────────────────────────────────────────────────
+
+    #[cfg(feature = "editor")]
+    editor::build(p);
+}
 
 /// What the editor adds: the physics asset editors and file types, and the
 /// components' "Add component" entries, as a linked editor provider; and the
@@ -101,31 +101,27 @@ mod editor {
     use crate::builtin_provider::PhysicsBuiltinProvider;
     use ui_level_editor::extend::{WorldSettingField, WorldSettingKind};
 
-    inventory::submit! {
-        plugin_manager::PluginEditorProvider {
-            origin: pulsar_plugins::origin!(),
+    pub(super) fn build(p: &mut pulsar_plugins::PluginBuilder) {
+        p.add(plugin_manager::PluginEditorProvider {
+            origin: p.origin(),
             id: PhysicsBuiltinProvider::ID,
             create: || Arc::new(PhysicsBuiltinProvider),
-        }
-    }
+        });
 
-    // The level's physics settings, kept under the keys levels have always
-    // stored them by.
-    inventory::submit! {
-        WorldSettingField {
-            origin: pulsar_plugins::origin!(),
+        // The level's physics settings, kept under the keys levels have always
+        // stored them by.
+        p.add(WorldSettingField {
+            origin: p.origin(),
             id: "physics.enabled",
             section: "Physics",
             label: "Physics Enabled",
             order: 0,
             key: "physics_enabled",
             kind: WorldSettingKind::Toggle { default: true },
-        }
-    }
+        });
 
-    inventory::submit! {
-        WorldSettingField {
-            origin: pulsar_plugins::origin!(),
+        p.add(WorldSettingField {
+            origin: p.origin(),
             id: "physics.gravity",
             section: "Physics",
             label: "Gravity",
@@ -135,7 +131,7 @@ mod editor {
                 default: [0.0, -9.81, 0.0],
                 unit: "m/s²",
             },
-        }
+        });
     }
 }
 
