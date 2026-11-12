@@ -282,6 +282,7 @@ fn physics_enabled(scope: &SessionScope) -> bool {
 /// simulation if it is the first. Registers nothing when the level turned
 /// physics off.
 pub(crate) fn begin(cx: &mut ActorCx<'_>, instance: Entity) {
+    profiling::profile_scope!("Physics::Begin");
     let scope = cx.session();
     if !physics_enabled(scope) {
         return;
@@ -296,6 +297,7 @@ pub(crate) fn begin(cx: &mut ActorCx<'_>, instance: Entity) {
 /// A physics component ended play: forget it. The last one stops the
 /// simulation thread (joined here); the next `begin` starts a new one.
 pub(crate) fn end(cx: &mut ActorCx<'_>) {
+    profiling::profile_scope!("Physics::End");
     let Some(instance) = cx.instance else {
         return;
     };
