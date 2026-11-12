@@ -9,9 +9,21 @@
 //! The driver is one system of the rigid body class
 //! (`pulsar_world_registry::System`, [`run`], registered in
 //! `crate::registrations`) run once a frame with the whole `World`. That is
-//! the hook plugins have for a world-wide pass; per-instance callbacks (`#[register_component_runtime]`)
+//! the hook plugins have for a world-wide pass; per-instance callbacks
 //! cannot see the other rows that colliders, joints and force fields relate
 //! to.
+//!
+//! # Lifecycle owns existence
+//!
+//! A session's simulation is a [`PhysicsSession`], a resource in the
+//! session's scope (`SessionScope`). The five physics components
+//! (`crate::lifecycle`) call [`begin`] from `begin_play` and [`end`] from
+//! `end_play`: the first `begin` starts the simulation thread (reading the
+//! level's `gravity` and `physics_enabled` from the session's settings;
+//! disabled registers nothing), the last `end` stops and joins it, and the end
+//! of the session drops the resource, which joins it too. Nothing is keyed by
+//! an address and nothing is pruned by time. Property changes of a running
+//! component still flow through the journals.
 //!
 //! # Per frame, on the game thread (`run`)
 //!
@@ -38,7 +50,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Condvar, LazyLock, Mutex, MutexGuard};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use editor_task_queue::{ServiceDescription, ServiceHandle, TaskContext, ThreadRole};
 use std::time::{Duration, Instant};
 
@@ -47,14 +59,13 @@ use pulsar_scenedb::{
     ChangeCursor, ChangeRead, ComponentChange, ComponentChangeKind, Entity, World,
 };
 use pulsar_world_registry::pulsar_scene_model::{ComponentOwner, Transform};
-use pulsar_world_registry::SystemContext;
+use engine_backend::scene::class_spec::{ActorCx, SessionScope};
+use pulsar_world_registry::{ComponentRuntimeState, SystemContext};
 
 use crate::behavior::{behaviors, Output, Part, PhysEvent, Touched, WriteCtx};
 use crate::physics_events::{self, EventIds};
 use crate::sim::Sim;
 
-/// A session nobody ticked for this long is shut down.
-const IDLE_SESSION: Duration = Duration::from_secs(10);
 /// Events kept for a frame the game thread has not collected yet.
 const MAX_PENDING_EVENTS: usize = 10_000;
 
@@ -119,20 +130,24 @@ struct Streams {
     scratch: Vec<ComponentChange>,
 }
 
-/// One `World`'s simulation thread and its mailboxes.
-struct Session {
+/// A session's simulation: its thread, mailboxes, the component instances
+/// that began play and the game thread's view of the journals. A resource of
+/// the session's scope; its `Drop` joins the thread.
+pub(crate) struct PhysicsSession {
     shared: Arc<Shared>,
     /// The simulation thread, a persistent task in the engine's thread
     /// registry (the Tasks window's Threads and Services views).
     thread: Option<ServiceHandle<()>>,
-    last_tick: Instant,
+    /// The component instances that began play and have not ended. The
+    /// thread lives while this is not empty.
+    members: HashSet<Entity>,
     streams: Streams,
     /// The hub the physics events are registered on, and their ids there.
     events: Option<(EventHub, EventIds)>,
 }
 
-impl Session {
-    fn spawn() -> Self {
+impl PhysicsSession {
+    fn spawn(gravity: [f32; 3]) -> Self {
         let shared = Arc::new(Shared::default());
         let worker = Arc::clone(&shared);
         let thread = editor_task_queue::spawn_service(
@@ -141,21 +156,21 @@ impl Session {
                 // Idle between frames with nothing to do; a busy step beats
                 // at least this often.
                 .heartbeat(Duration::from_secs(5)),
-            move |ctx| simulation_thread(worker, ctx),
+            move |ctx| simulation_thread(worker, ctx, gravity),
         )
         .map_err(|error| tracing::error!("could not start the physics thread: {error}"))
         .ok();
         Self {
             shared,
             thread,
-            last_tick: Instant::now(),
+            members: HashSet::new(),
             streams: Streams::default(),
             events: None,
         }
     }
 }
 
-impl Drop for Session {
+impl Drop for PhysicsSession {
     fn drop(&mut self) {
         lock(&self.shared.inbox).shutdown = true;
         self.shared.wake.notify_all();
@@ -165,9 +180,9 @@ impl Drop for Session {
     }
 }
 
-fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext) {
+fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext, gravity: [f32; 3]) {
     profiling::set_thread_name("Pulsar-Physics");
-    let mut sim = Sim::default();
+    let mut sim = Sim::with_gravity(gravity);
     loop {
         ctx.set_phase("Waiting for work");
         ctx.set_idle(true);
@@ -209,7 +224,7 @@ fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext) {
                 tracing::error!(
                     "the physics simulation panicked; it restarts from the scene on the next change"
                 );
-                sim = Sim::default();
+                sim = Sim::with_gravity(gravity);
             }
         }
         ctx.tick(started.elapsed());
@@ -231,14 +246,67 @@ fn publish(shared: &Shared, output: Output, seq: u64) {
     outbox.events.drain(..excess);
 }
 
-/// One simulation per `World`, keyed by the world's address: systems
-/// are plain function pointers and carry no session state. A
-/// reused address starts from a stale session; its first read is a full
-/// rescan that replaces whatever the old one knew.
-static SESSIONS: LazyLock<Mutex<HashMap<usize, Session>>> = LazyLock::new(Mutex::default);
+// ---------------------------------------------------------------------------
+// The session's simulation: registered by the components' lifecycle
+// ---------------------------------------------------------------------------
 
-fn key_of(world: &World) -> usize {
-    world as *const World as usize
+/// The level's gravity (m/s²) in the session's settings: `[x, y, z]` (the
+/// World Settings vector) or `{x, y, z}`; the default when absent.
+fn gravity_of(scope: &SessionScope) -> [f32; 3] {
+    let Some(value) = scope.setting("gravity") else {
+        return crate::sim::GRAVITY;
+    };
+    let component = |index: usize, key: &str| {
+        value
+            .get(index)
+            .or_else(|| value.get(key))
+            .and_then(serde_json::Value::as_f64)
+            .map(|v| v as f32)
+    };
+    match (component(0, "x"), component(1, "y"), component(2, "z")) {
+        (Some(x), Some(y), Some(z)) => [x, y, z],
+        _ => crate::sim::GRAVITY,
+    }
+}
+
+/// Whether the level simulates physics (World Settings' `physics_enabled`,
+/// on by default).
+fn physics_enabled(scope: &SessionScope) -> bool {
+    scope
+        .setting("physics_enabled")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(true)
+}
+
+/// A physics component began play: register it, starting the session's
+/// simulation if it is the first. Registers nothing when the level turned
+/// physics off.
+pub(crate) fn begin(cx: &mut ActorCx<'_>, instance: Entity) {
+    let scope = cx.session();
+    if !physics_enabled(scope) {
+        return;
+    }
+    let gravity = gravity_of(scope);
+    scope
+        .get_or_insert_with(|| PhysicsSession::spawn(gravity))
+        .members
+        .insert(instance);
+}
+
+/// A physics component ended play: forget it. The last one stops the
+/// simulation thread (joined here); the next `begin` starts a new one.
+pub(crate) fn end(cx: &mut ActorCx<'_>) {
+    let Some(instance) = cx.instance else {
+        return;
+    };
+    let scope = cx.session();
+    let Some(session) = scope.resource_mut::<PhysicsSession>() else {
+        return;
+    };
+    session.members.remove(&instance);
+    if session.members.is_empty() {
+        scope.remove_resource::<PhysicsSession>();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -246,18 +314,17 @@ fn key_of(world: &World) -> usize {
 // ---------------------------------------------------------------------------
 
 /// One frame of the driver over the whole `World`: the `pulsar.physics.step`
-/// system of the rigid body class (`crate::registrations`).
+/// system of the rigid body class (`crate::registrations`). A no-op while the
+/// session has no simulation (nothing began play, or the level disabled
+/// physics).
 pub(crate) fn run(ctx: &mut SystemContext<'_>) {
     profiling::profile_scope!("Physics::Tick");
     let world: &mut World = &mut *ctx.world;
     let events: &EventHub = ctx.events;
     let delta_seconds = ctx.delta_seconds;
-    let key = key_of(world);
-    let mut sessions = lock(&SESSIONS);
-    let now = Instant::now();
-    sessions.retain(|&other, session| other == key || now - session.last_tick < IDLE_SESSION);
-    let session = sessions.entry(key).or_insert_with(Session::spawn);
-    session.last_tick = now;
+    let Some(session) = ctx.runtime.scope_mut().resource_mut::<PhysicsSession>() else {
+        return;
+    };
     if !session
         .events
         .as_ref()
@@ -266,7 +333,7 @@ pub(crate) fn run(ctx: &mut SystemContext<'_>) {
         session.events = Some((events.clone(), physics_events::register_all(events)));
     }
 
-    let Session {
+    let PhysicsSession {
         shared,
         streams,
         events: hub,
@@ -424,25 +491,34 @@ fn read_parts(
 // Diagnostics
 // ---------------------------------------------------------------------------
 
-/// Number of bodies and colliders simulated for `world` after the last
-/// completed run (for tests and diagnostics).
-pub fn simulated_counts(world: &World) -> (usize, usize) {
-    lock(&SESSIONS)
-        .get(&key_of(world))
+/// Number of bodies and colliders simulated in `state`'s session after the
+/// last completed run (for tests and diagnostics); `(0, 0)` while it has no
+/// simulation.
+pub fn simulated_counts(state: &ComponentRuntimeState) -> (usize, usize) {
+    state
+        .scope()
+        .resource::<PhysicsSession>()
         .map_or((0, 0), |session| {
             let counts = *lock(&session.shared.counts);
             (counts.0, counts.1)
         })
 }
 
-/// Block until the simulation thread of `world` has handled everything
-/// submitted so far. Headless tools and tests use it to make the
+/// Whether `state`'s session has a running simulation thread.
+pub fn simulation_running(state: &ComponentRuntimeState) -> bool {
+    state
+        .scope()
+        .resource::<PhysicsSession>()
+        .is_some_and(|session| session.thread.is_some())
+}
+
+/// Block until the simulation thread of `state`'s session has handled
+/// everything submitted so far. Headless tools and tests use it to make the
 /// one-frame-late results deterministic; the game never calls it.
-pub fn wait_idle(world: &World) {
-    // The session lock is not held while waiting, so ticks of other worlds
-    // are not blocked.
-    let shared = lock(&SESSIONS)
-        .get(&key_of(world))
+pub fn wait_idle(state: &ComponentRuntimeState) {
+    let shared = state
+        .scope()
+        .resource::<PhysicsSession>()
         .map(|session| Arc::clone(&session.shared));
     if let Some(shared) = shared {
         let target = shared.submitted.load(Ordering::Acquire);
@@ -495,7 +571,7 @@ mod tests {
     fn run(world: &mut World, state: &mut ComponentRuntimeState, hub: &EventHub, seconds: f32) {
         for _ in 0..(seconds * 60.0) as usize {
             tick_live_components(world, hub, 1.0 / 60.0, 1, state);
-            wait_idle(world);
+            wait_idle(state);
             hub.flush(pulsar_events::FlushPoint::AfterSystems);
         }
     }
@@ -536,7 +612,7 @@ mod tests {
             .unwrap()
             .linear_velocity;
         assert!(v[1].abs() < 0.5, "settled: {v:?}");
-        assert_eq!(simulated_counts(&world), (1, 2));
+        assert_eq!(simulated_counts(&state), (1, 2));
     }
 
     #[test]
@@ -547,11 +623,11 @@ mod tests {
         attach(&mut world, owner, ColliderComponent::default());
         let body = attach(&mut world, owner, RigidBodyComponent::default());
         run(&mut world, &mut state, &hub, 0.2);
-        assert_eq!(simulated_counts(&world).0, 1);
+        assert_eq!(simulated_counts(&state).0, 1);
 
         world.remove::<RigidBodyComponent>(body);
         run(&mut world, &mut state, &hub, 0.1);
-        assert_eq!(simulated_counts(&world).0, 0);
+        assert_eq!(simulated_counts(&state).0, 0);
         let before = y(&world, owner);
         run(&mut world, &mut state, &hub, 0.5);
         assert_eq!(y(&world, owner), before, "frozen");
@@ -757,8 +833,9 @@ mod tests {
         run(&mut world, &mut state, &hub, 0.2);
         // Nothing changed since the first frames: the journals are empty, so
         // a frame's parts are empty and only time is submitted.
-        let mut streams = lock(&SESSIONS)
-            .get_mut(&key_of(&world))
+        let mut streams = state
+            .scope_mut()
+            .resource_mut::<PhysicsSession>()
             .map(|s| std::mem::take(&mut s.streams))
             .unwrap();
         let (moved, rescan) = read_moves(&world, &mut streams);
@@ -778,10 +855,125 @@ mod tests {
         let owner = object(&mut world, [0.0, 10.0, 0.0]);
         attach(&mut world, owner, RigidBodyComponent::default());
         tick_live_components(&mut world, &hub, 1.0 / 60.0, 1, &mut state);
-        wait_idle(&world);
+        wait_idle(&state);
         let found = editor_task_queue::thread_snapshots()
             .into_iter()
             .any(|t| t.name == "Pulsar-Physics" && t.owner == "physics_plugin");
         assert!(found, "the Pulsar-Physics thread is not registered");
+    }
+
+    /// A headless session whose level settings are `settings`.
+    fn level(settings: serde_json::Value) -> ComponentRuntimeState {
+        let mut state = ComponentRuntimeState::default();
+        state.set_settings(settings);
+        state
+    }
+
+    fn falling_box(world: &mut World, height: f64) -> Entity {
+        let owner = object(world, [0.0, height, 0.0]);
+        attach(world, owner, ColliderComponent::default());
+        attach(world, owner, RigidBodyComponent::default());
+        owner
+    }
+
+    #[test]
+    fn the_levels_gravity_changes_the_motion() {
+        let fall = |settings: serde_json::Value| {
+            let mut world = World::new();
+            let (mut state, hub) = (level(settings), EventHub::new());
+            let owner = falling_box(&mut world, 100.0);
+            run(&mut world, &mut state, &hub, 1.0);
+            100.0 - y(&world, owner)
+        };
+        let earth = fall(serde_json::json!({}));
+        let moon = fall(serde_json::json!({ "gravity": [0.0, -1.62, 0.0] }));
+        let none = fall(serde_json::json!({ "gravity": [0.0, 0.0, 0.0] }));
+        assert!(earth > 3.0, "default gravity: fell {earth}");
+        assert!(moon < earth * 0.4 && moon > 0.1, "weaker gravity: {moon} vs {earth}");
+        assert!(none < 0.01, "no gravity: fell {none}");
+    }
+
+    #[test]
+    fn physics_disabled_registers_nothing() {
+        let mut world = World::new();
+        let (mut state, hub) = (level(serde_json::json!({ "physics_enabled": false })), EventHub::new());
+        let owner = falling_box(&mut world, 10.0);
+        run(&mut world, &mut state, &hub, 0.5);
+        assert!(!simulation_running(&state));
+        assert_eq!(state.scope().resource_count(), 0);
+        assert_eq!(simulated_counts(&state), (0, 0));
+        assert_eq!(y(&world, owner), 10.0, "nothing moved it");
+    }
+
+    #[test]
+    fn two_sessions_in_one_process_do_not_share_a_simulation() {
+        let (mut world_a, mut world_b) = (World::new(), World::new());
+        let (mut a, mut b) = (ComponentRuntimeState::default(), ComponentRuntimeState::default());
+        let hub = EventHub::new();
+        let owner_a = falling_box(&mut world_a, 50.0);
+        run(&mut world_a, &mut a, &hub, 0.2);
+        assert!(simulation_running(&a) && !simulation_running(&b));
+        assert_eq!(simulated_counts(&a), (1, 1));
+        assert_eq!(simulated_counts(&b), (0, 0));
+
+        // B has a body of its own, and A's is not B's.
+        let owner_b = falling_box(&mut world_b, 50.0);
+        run(&mut world_b, &mut b, &hub, 0.2);
+        assert_eq!(simulated_counts(&b), (1, 1));
+        let before = y(&world_a, owner_a);
+        run(&mut world_b, &mut b, &hub, 0.5);
+        assert_eq!(y(&world_a, owner_a), before, "A did not run while B did");
+        assert!(y(&world_b, owner_b) < 50.0);
+    }
+
+    fn physics_threads() -> usize {
+        editor_task_queue::thread_snapshots()
+            .into_iter()
+            .filter(|t| t.name == "Pulsar-Physics" && t.owner == "physics_plugin")
+            .count()
+    }
+
+    #[test]
+    fn ending_the_session_joins_the_simulation_thread() {
+        let mut world = World::new();
+        let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
+        falling_box(&mut world, 10.0);
+        run(&mut world, &mut state, &hub, 0.2);
+        assert!(simulation_running(&state));
+
+        pulsar_world_registry::end_session(&mut world, &hub, &mut state);
+        assert!(!simulation_running(&state), "the resource is gone");
+        assert_eq!(state.scope().resource_count(), 0);
+        assert_eq!(simulated_counts(&state), (0, 0));
+    }
+
+    #[test]
+    fn the_last_component_ends_the_thread_and_the_next_one_restarts_it() {
+        let mut world = World::new();
+        let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
+        let owner = object(&mut world, [0.0, 10.0, 0.0]);
+        let collider = attach(&mut world, owner, ColliderComponent::default());
+        let body = attach(&mut world, owner, RigidBodyComponent::default());
+        run(&mut world, &mut state, &hub, 0.2);
+        assert!(simulation_running(&state));
+
+        // One component left: the simulation stays.
+        world.remove::<RigidBodyComponent>(body);
+        run(&mut world, &mut state, &hub, 0.1);
+        assert!(simulation_running(&state));
+
+        // The last one ends: the thread is stopped and joined.
+        world.remove::<ColliderComponent>(collider);
+        run(&mut world, &mut state, &hub, 0.1);
+        assert!(!simulation_running(&state));
+        assert_eq!(simulated_counts(&state), (0, 0));
+
+        // A new first begin_play starts a new one.
+        let again = falling_box(&mut world, 20.0);
+        run(&mut world, &mut state, &hub, 0.3);
+        assert!(simulation_running(&state));
+        assert_eq!(simulated_counts(&state), (1, 1));
+        assert!(y(&world, again) < 20.0, "the restarted simulation moves it");
+        let _ = physics_threads();
     }
 }

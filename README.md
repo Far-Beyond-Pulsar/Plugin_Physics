@@ -247,9 +247,19 @@ world; the simulation follows them through SceneDB's change journals.
   and every edit replaces those copies. Deleting the whole simulation loses
   nothing: one full re-read rebuilds it.
 
-The component runtime only offers one world-wide hook per plugin (a
-`ComponentTickRegistration`), so `runtime.rs` has a single driver
-(`registrations.rs` registers it) and knows no component by name.
+**Lifecycle owns existence, journals own mutation.** The five simulated
+components (body, collider, joint, character controller, force field)
+implement `WorldActor` (`lifecycle.rs`) and register their table through
+`ClassSpec::actor` in `registrations.rs`. `begin_play` adds the instance to the
+session's physics resource (a `PhysicsSession` in the session scope);
+`end_play` removes it. The level's World Settings are read when the first one
+begins: `gravity` is the simulation's gravity (`Sim::gravity`, also the
+character controller's) and `physics_enabled = false` registers nothing.
+
+The step itself stays one world-wide `System` (`pulsar.physics.step`): a
+per-instance tick could not see the other rows that colliders, joints and
+force fields relate to. `runtime.rs` has that single driver and knows no
+component by name; it does nothing while the session has no simulation.
 
 ## Adding or changing a component
 
@@ -289,8 +299,13 @@ that attach to them, colliders before the joints that connect bodies.
 
 ## Threading, profiling and timing
 
-- One simulation thread per `World`, named `Pulsar-Physics`, shut down after
-  ten idle seconds. A panic in a step restarts the simulation from the scene.
+- One simulation thread per session (not per address: two sessions in a
+  process never share one), named `Pulsar-Physics`, a service of the engine's
+  thread registry. It starts at the session's first physics `begin_play`, stops
+  and is joined when the last physics component ends (or the session ends, which
+  runs every `end_play` before the editor restores its snapshot), and starts
+  again at the next `begin_play`. A panic in a step restarts the simulation
+  from the scene.
 - Fixed 60 Hz steps with an accumulator (at most five per run), so results do
   not depend on the frame rate.
 - The `Physics::*` scopes appear in the editor's flamegraph (a DLL build's
@@ -313,7 +328,9 @@ cargo test  -p physics_plugin --features editor
 Tests run the real component runtime against a SceneDB `World`: bodies fall
 and rest on colliders, edits and teleports reach Rapier, collisions and
 triggers arrive as `physics::` events, joints hold, characters walk and land,
-and an idle scene sends nothing to the simulation.
+an idle scene sends nothing to the simulation, the level's gravity and
+`physics_enabled` apply, sessions do not share a simulation, and the thread
+stops with the last component and with the session.
 
 ## Current limits
 

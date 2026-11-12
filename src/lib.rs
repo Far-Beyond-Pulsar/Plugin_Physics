@@ -28,6 +28,7 @@ mod file_types;
 mod math;
 mod physics_events;
 pub mod registrations;
+mod lifecycle;
 mod runtime;
 mod sim;
 pub use components::*;
@@ -44,7 +45,7 @@ pub use file_types::{
     COLLISION_LAYERS_EXT, COLLISION_LAYERS_ID, COMBINE_MODES, PHYSICS_MATERIAL_EXT,
     PHYSICS_MATERIAL_ID, SKELETAL_PHYSICS_EXT, SKELETAL_PHYSICS_ID,
 };
-pub use runtime::{simulated_counts, wait_idle};
+pub use runtime::{simulated_counts, simulation_running, wait_idle};
 
 #[cfg(test)]
 mod golden_metadata;
