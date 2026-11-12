@@ -32,14 +32,14 @@
 //!
 //! # The simulation thread
 //!
-//! One thread per `World`, named `Pulsar-Physics`. Its scopes (`Physics::*`)
+//! One thread per `World`, named `Pulsar-Physics`, a service of the engine's thread registry (visible in the Tasks window). Its scopes (`Physics::*`)
 //! are recorded in the editor's profiler (a DLL build's `export_plugin!`
 //! shares the host profiler with this library when it loads).
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, LazyLock, Mutex, MutexGuard};
-use std::thread::JoinHandle;
+use editor_task_queue::{ServiceDescription, ServiceHandle, TaskContext, ThreadRole};
 use std::time::{Duration, Instant};
 
 use pulsar_events::EventHub;
@@ -122,7 +122,9 @@ struct Streams {
 /// One `World`'s simulation thread and its mailboxes.
 struct Session {
     shared: Arc<Shared>,
-    thread: Option<JoinHandle<()>>,
+    /// The simulation thread, a persistent task in the engine's thread
+    /// registry (the Tasks window's Threads and Services views).
+    thread: Option<ServiceHandle<()>>,
     last_tick: Instant,
     streams: Streams,
     /// The hub the physics events are registered on, and their ids there.
@@ -133,11 +135,16 @@ impl Session {
     fn spawn() -> Self {
         let shared = Arc::new(Shared::default());
         let worker = Arc::clone(&shared);
-        let thread = std::thread::Builder::new()
-            .name("Pulsar-Physics".into())
-            .spawn(move || simulation_thread(worker))
-            .map_err(|error| tracing::error!("could not start the physics thread: {error}"))
-            .ok();
+        let thread = editor_task_queue::spawn_service(
+            ServiceDescription::new("Physics simulation", "physics", "Pulsar-Physics", ThreadRole::Service)
+                .owner("physics_plugin")
+                // Idle between frames with nothing to do; a busy step beats
+                // at least this often.
+                .heartbeat(Duration::from_secs(5)),
+            move |ctx| simulation_thread(worker, ctx),
+        )
+        .map_err(|error| tracing::error!("could not start the physics thread: {error}"))
+        .ok();
         Self {
             shared,
             thread,
@@ -158,10 +165,12 @@ impl Drop for Session {
     }
 }
 
-fn simulation_thread(shared: Arc<Shared>) {
+fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext) {
     profiling::set_thread_name("Pulsar-Physics");
     let mut sim = Sim::default();
     loop {
+        ctx.set_phase("Waiting for work");
+        ctx.set_idle(true);
         let (parts, dt, handled) = {
             let mut inbox = lock(&shared.inbox);
             while inbox.parts.is_empty() && inbox.dt == 0.0 && !inbox.shutdown {
@@ -183,6 +192,9 @@ fn simulation_thread(shared: Arc<Shared>) {
             )
         };
 
+        ctx.set_idle(false);
+        ctx.set_phase("Stepping the Rapier world");
+        let started = Instant::now();
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             profiling::profile_scope!("Physics::Frame");
             sim.run(parts, dt)
@@ -200,6 +212,7 @@ fn simulation_thread(shared: Arc<Shared>) {
                 sim = Sim::default();
             }
         }
+        ctx.tick(started.elapsed());
         *lock(&shared.processed) = handled;
         shared.settled.notify_all();
     }
@@ -759,18 +772,16 @@ mod tests {
     }
 
     #[test]
-    fn the_simulation_runs_on_its_own_named_thread() {
+    fn the_simulation_thread_is_in_the_engine_thread_registry() {
         let mut world = World::new();
         let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
         let owner = object(&mut world, [0.0, 10.0, 0.0]);
         attach(&mut world, owner, RigidBodyComponent::default());
         tick_live_components(&mut world, &hub, 1.0 / 60.0, 1, &mut state);
         wait_idle(&world);
-        let name = lock(&SESSIONS).get(&key_of(&world)).and_then(|s| {
-            s.thread
-                .as_ref()
-                .map(|t| t.thread().name().map(str::to_owned))
-        });
-        assert_eq!(name, Some(Some("Pulsar-Physics".to_owned())));
+        let found = editor_task_queue::thread_snapshots()
+            .into_iter()
+            .any(|t| t.name == "Pulsar-Physics" && t.owner == "physics_plugin");
+        assert!(found, "the Pulsar-Physics thread is not registered");
     }
 }

@@ -167,12 +167,6 @@ impl EditorPluginComponents for PhysicsPlugin {
     }
 }
 #[cfg(feature = "editor")]
-impl EditorPluginSubsystems for PhysicsPlugin {
-    fn subsystems(&self) -> Vec<Box<dyn Subsystem>> {
-        Vec::new()
-    }
-}
-
 #[cfg(all(feature = "editor", not(feature = "builtin")))]
 export_plugin!(PhysicsPlugin);
 

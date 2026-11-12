@@ -50,6 +50,8 @@ pulsar_scenedb = { workspace = true }
 pulsar_world_registry = { workspace = true }
 pulsar_events = { workspace = true }
 profiling = { workspace = true }
+# The simulation thread is a service in the engine's thread registry.
+editor_task_queue = { workspace = true }
 inventory = { workspace = true }
 rapier3d = { workspace = true }
 glam = { workspace = true }
