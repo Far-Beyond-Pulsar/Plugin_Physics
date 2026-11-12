@@ -32,6 +32,7 @@ pub const STEP_SECONDS: f32 = 1.0 / 60.0;
 /// Most steps run for one frame's worth of time; beyond it time is dropped,
 /// not owed.
 const MAX_STEPS_PER_RUN: u32 = 5;
+/// The gravity of a level that sets none (World Settings' default).
 pub const GRAVITY: [f32; 3] = [0.0, -9.81, 0.0];
 
 /// What a collider handle means to event translation.
@@ -64,6 +65,9 @@ pub struct Sim {
     pub dirty: HashSet<Entity>,
     states: HashMap<TypeId, Box<dyn Any + Send>>,
     accumulator: f32,
+    /// The level's gravity (m/s²), read from its settings when the session's
+    /// simulation started.
+    pub gravity: [f32; 3],
     collisions: Receiver<CollisionEvent>,
     collector: ChannelEventCollector,
 }
@@ -93,6 +97,7 @@ impl Default for Sim {
             dirty: HashSet::new(),
             states: HashMap::new(),
             accumulator: 0.0,
+            gravity: GRAVITY,
             collisions,
             collector: ChannelEventCollector::new(collision_tx, force_tx),
         }
@@ -100,6 +105,14 @@ impl Default for Sim {
 }
 
 impl Sim {
+    /// A simulation under `gravity`.
+    pub fn with_gravity(gravity: [f32; 3]) -> Self {
+        Self {
+            gravity,
+            ..Self::default()
+        }
+    }
+
     /// `(bodies, colliders, joints)` currently simulated.
     pub fn counts(&self) -> (usize, usize, usize) {
         (
@@ -191,7 +204,7 @@ impl Sim {
                 }
             }
             self.pipeline.step(
-                vector(GRAVITY),
+                vector(self.gravity),
                 &self.params,
                 &mut self.islands,
                 &mut self.broad_phase,

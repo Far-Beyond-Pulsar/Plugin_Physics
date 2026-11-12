@@ -9,6 +9,7 @@
 //! (`physics_events::EventSpec`, through `declare_events!`); this module
 //! only hands the plugin's contributions to the engine.
 
+use engine_backend::scene::class_spec::ActorTable;
 use engine_backend::scene::{ClassSpec, ComponentsBuilder};
 use pulsar_world_registry::{systems::COMPONENTS, ComponentEventRegistration, System};
 
@@ -54,19 +55,33 @@ const STEP: System = System::new("pulsar.physics.step", crate::runtime::run).aft
 pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
     // ── Component classes ───────────────────────────────────────────────────
 
-    // The driver is the rigid body class's system: one world-wide step a
-    // frame moves SceneDB's changes to the simulation thread and its results
-    // back (`crate::runtime`). Removal is seen through the journals, not
-    // through lifecycle sets.
+    // Existence is lifecycle: each of the five classes registers itself in
+    // the session's simulation when it begins play and leaves when it ends
+    // (`crate::lifecycle`). The driver is the rigid body class's system: one
+    // world-wide step a frame moves SceneDB's changes to the simulation
+    // thread and its results back (`crate::runtime`).
     p.components()
         .class::<RigidBodyComponent>(ClassSpec {
             systems: &[STEP],
+            actor: Some(ActorTable::of_world::<RigidBodyComponent>()),
             ..ClassSpec::default()
         })
-        .class::<ColliderComponent>(ClassSpec::default())
-        .class::<JointComponent>(ClassSpec::default())
-        .class::<CharacterControllerComponent>(ClassSpec::default())
-        .class::<ForceFieldComponent>(ClassSpec::default())
+        .class::<ColliderComponent>(ClassSpec {
+            actor: Some(ActorTable::of_world::<ColliderComponent>()),
+            ..ClassSpec::default()
+        })
+        .class::<JointComponent>(ClassSpec {
+            actor: Some(ActorTable::of_world::<JointComponent>()),
+            ..ClassSpec::default()
+        })
+        .class::<CharacterControllerComponent>(ClassSpec {
+            actor: Some(ActorTable::of_world::<CharacterControllerComponent>()),
+            ..ClassSpec::default()
+        })
+        .class::<ForceFieldComponent>(ClassSpec {
+            actor: Some(ActorTable::of_world::<ForceFieldComponent>()),
+            ..ClassSpec::default()
+        })
         .class::<legacy::PhysicsComponent>(ClassSpec::default())
         .class::<legacy::RigidbodyComponent>(ClassSpec::default());
 

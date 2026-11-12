@@ -14,7 +14,7 @@ use crate::behavior::{
 };
 use crate::declare_events;
 use crate::math::{array, euler_degrees_from_quat, pose, simulated, vector};
-use crate::sim::{ColliderInfo, Sim, GRAVITY};
+use crate::sim::{ColliderInfo, Sim};
 
 /// The class name scripts and level files use.
 pub const CHARACTER_CONTROLLER_CLASS_NAME: &str = "CharacterControllerComponent";
@@ -271,7 +271,7 @@ fn after_steps(sim: &mut Sim, seconds: f32, out: &mut Output) {
             if t.grounded && t.vertical < 0.0 {
                 t.vertical = 0.0;
             }
-            t.vertical += GRAVITY[1] * cfg.gravity_scale * seconds;
+            t.vertical += sim.gravity[1] * cfg.gravity_scale * seconds;
             let desired = vector([
                 cfg.desired_velocity[0] * seconds,
                 (cfg.desired_velocity[1] + t.vertical) * seconds,
