@@ -67,6 +67,7 @@ pub fn file_types() -> Vec<FileTypeDefinition> {
             default_content: physics_material_template(),
             categories: vec![CATEGORY.to_string()],
             creation_directory: Some(CREATION_DIR.to_string()),
+            cook: plugin_editor_api::file_types::copy_file_for_cook,
         },
         FileTypeDefinition {
             id: FileTypeId::new(COLLISION_LAYERS_ID),
@@ -78,6 +79,7 @@ pub fn file_types() -> Vec<FileTypeDefinition> {
             default_content: collision_layers_template(),
             categories: vec![CATEGORY.to_string()],
             creation_directory: Some(CREATION_DIR.to_string()),
+            cook: plugin_editor_api::file_types::copy_file_for_cook,
         },
         FileTypeDefinition {
             id: FileTypeId::new(SKELETAL_PHYSICS_ID),
@@ -89,6 +91,7 @@ pub fn file_types() -> Vec<FileTypeDefinition> {
             default_content: skeletal_physics_template(),
             categories: vec![CATEGORY.to_string()],
             creation_directory: Some(CREATION_DIR.to_string()),
+            cook: plugin_editor_api::file_types::copy_file_for_cook,
         },
     ]
 }
