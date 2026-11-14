@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.75,
+  "restitution": 0.05,
+  "friction_combine": "average",
+  "restitution_combine": "average",
+  "density": 2400.0,
+  "surface": "concrete",
+  "description": "Rough and dead: grips well, does not bounce. Density 2400 kg/m3, so a 1 m cube weighs 2.4 tonnes. Typical for floors and walls."
+}

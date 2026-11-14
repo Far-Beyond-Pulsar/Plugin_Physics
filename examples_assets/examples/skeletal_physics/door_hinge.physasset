@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skeletal_mesh": "5ce1e7a1-0000-4000-8000-0000000000a3",
+  "bodies": [
+    {
+      "bone_id": "frame",
+      "motion": "fixed",
+      "mass": 0.0,
+      "shape": "box",
+      "center": [
+        0,
+        1.0,
+        0
+      ],
+      "dimensions": [
+        0.05,
+        1.0,
+        0.05
+      ]
+    },
+    {
+      "bone_id": "door",
+      "motion": "dynamic",
+      "mass": 25.0,
+      "shape": "box",
+      "center": [
+        0.45,
+        1.0,
+        0
+      ],
+      "dimensions": [
+        0.45,
+        1.0,
+        0.025
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "bone_id": "door",
+      "connected_bone_id": "frame",
+      "kind": "hinge",
+      "anchor": [
+        0,
+        1.0,
+        0
+      ],
+      "connected_anchor": [
+        0,
+        0,
+        0
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "limits_enabled": true,
+      "limits_degrees": [
+        -100,
+        100
+      ]
+    }
+  ]
+}

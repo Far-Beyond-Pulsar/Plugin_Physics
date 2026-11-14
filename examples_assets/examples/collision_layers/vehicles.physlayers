@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "layers": [
+    {
+      "name": "Default",
+      "collides_with": [
+        "Default",
+        "Road",
+        "Vehicle",
+        "Debris",
+        "Barrier"
+      ],
+      "color": "#8a93a6",
+      "description": "Everything not given a layer."
+    },
+    {
+      "name": "Road",
+      "collides_with": [
+        "Default",
+        "Vehicle",
+        "Wheel",
+        "Debris"
+      ],
+      "color": "#5c6370",
+      "description": "Drivable ground."
+    },
+    {
+      "name": "Vehicle",
+      "collides_with": [
+        "Default",
+        "Road",
+        "Vehicle",
+        "Debris",
+        "Barrier"
+      ],
+      "color": "#4c9be8",
+      "description": "A car body."
+    },
+    {
+      "name": "Wheel",
+      "collides_with": [
+        "Road"
+      ],
+      "color": "#2e3440",
+      "description": "Wheel colliders: only the road."
+    },
+    {
+      "name": "Debris",
+      "collides_with": [
+        "Default",
+        "Road",
+        "Vehicle",
+        "Barrier"
+      ],
+      "color": "#d08770",
+      "description": "Cosmetic clutter: collides with ground and cars, never with other debris (cheap)."
+    },
+    {
+      "name": "Barrier",
+      "collides_with": [
+        "Default",
+        "Vehicle",
+        "Debris"
+      ],
+      "color": "#ebcb8b",
+      "description": "Track barriers."
+    }
+  ],
+  "description": "A driving game. Wheels only touch the road, so a car does not catch on the debris it drives through; the car body still hits everything solid."
+}

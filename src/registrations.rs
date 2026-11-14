@@ -100,6 +100,12 @@ pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
         derivation: None,
     });
 
+    // ── Files ───────────────────────────────────────────────────────────────
+
+    // The plugin's `examples/` folder: example materials, collision layer
+    // tables and skeletal physics assets, read-only (`crate::examples`).
+    p.add(crate::examples::provider(p.origin()));
+
     // ── Editor ──────────────────────────────────────────────────────────────
 
     #[cfg(feature = "editor")]

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.5,
+  "restitution": 0.0,
+  "friction_combine": "average",
+  "restitution_combine": "average",
+  "density": 985.0,
+  "surface": "flesh",
+  "description": "A character body or creature: moderate friction, no bounce, about the density of water so it neither sinks nor floats by much."
+}

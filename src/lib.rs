@@ -24,6 +24,7 @@ mod behavior;
 mod components;
 #[cfg(feature = "editor")]
 mod editors;
+mod examples;
 mod file_types;
 mod math;
 mod physics_events;

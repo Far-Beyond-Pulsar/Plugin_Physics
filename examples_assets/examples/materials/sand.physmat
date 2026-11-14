@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.9,
+  "restitution": 0.0,
+  "friction_combine": "average",
+  "restitution_combine": "multiply",
+  "density": 1600.0,
+  "surface": "sand",
+  "description": "Loose ground: lots of friction and no bounce at all. Multiply for restitution so anything touching sand loses its bounce, even a rubber ball."
+}

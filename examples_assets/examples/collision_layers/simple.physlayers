@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "layers": [
+    {
+      "name": "Default",
+      "collides_with": [
+        "Default"
+      ],
+      "color": "#8a93a6",
+      "description": "Solid objects."
+    },
+    {
+      "name": "Sensor",
+      "collides_with": [],
+      "color": "#a3be8c",
+      "description": "Overlap-only volumes. Collides with nothing, so nothing is pushed."
+    }
+  ],
+  "description": "The smallest useful table: one layer for solid things and one for sensors that never block anything solid."
+}

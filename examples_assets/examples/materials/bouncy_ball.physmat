@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.6,
+  "restitution": 0.9,
+  "friction_combine": "average",
+  "restitution_combine": "max",
+  "density": 150.0,
+  "surface": "rubber",
+  "description": "A toy ball that keeps 90 percent of its speed on each impact. A restitution near 1 warns in the editor (information only): the ball bounces for a long time."
+}

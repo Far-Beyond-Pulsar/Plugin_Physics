@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "skeletal_mesh": "5ce1e7a1-0000-4000-8000-0000000000a2",
+  "bodies": [
+    {
+      "bone_id": "root",
+      "motion": "fixed",
+      "mass": 0.0,
+      "shape": "box",
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "dimensions": [
+        0.12,
+        0.08,
+        0.3
+      ]
+    },
+    {
+      "bone_id": "spine",
+      "motion": "dynamic",
+      "mass": 25.0,
+      "shape": "box",
+      "center": [
+        0,
+        0,
+        0.2
+      ],
+      "dimensions": [
+        0.15,
+        0.1,
+        0.25
+      ]
+    },
+    {
+      "bone_id": "neck",
+      "motion": "dynamic",
+      "mass": 3.0,
+      "shape": "capsule",
+      "center": [
+        0,
+        0.15,
+        0
+      ],
+      "dimensions": [
+        0.06,
+        0.1,
+        0
+      ]
+    },
+    {
+      "bone_id": "head",
+      "motion": "dynamic",
+      "mass": 5.0,
+      "shape": "box",
+      "center": [
+        0,
+        0.1,
+        0
+      ],
+      "dimensions": [
+        0.09,
+        0.08,
+        0.14
+      ]
+    },
+    {
+      "bone_id": "tail",
+      "motion": "dynamic",
+      "mass": 0.8,
+      "shape": "capsule",
+      "center": [
+        0,
+        0,
+        -0.15
+      ],
+      "dimensions": [
+        0.03,
+        0.12,
+        0
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "bone_id": "spine",
+      "connected_bone_id": "root",
+      "kind": "fixed",
+      "anchor": [
+        0,
+        0,
+        0
+      ],
+      "connected_anchor": [
+        0,
+        0,
+        0
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "limits_enabled": false,
+      "limits_degrees": [
+        0,
+        0
+      ]
+    },
+    {
+      "bone_id": "neck",
+      "connected_bone_id": "spine",
+      "kind": "ball_socket",
+      "anchor": [
+        0,
+        0,
+        0.4
+      ],
+      "connected_anchor": [
+        0,
+        0,
+        0
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "limits_enabled": true,
+      "limits_degrees": [
+        -30,
+        30
+      ]
+    },
+    {
+      "bone_id": "head",
+      "connected_bone_id": "neck",
+      "kind": "ball_socket",
+      "anchor": [
+        0,
+        0.2,
+        0
+      ],
+      "connected_anchor": [
+        0,
+        0,
+        0
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "limits_enabled": true,
+      "limits_degrees": [
+        -40,
+        40
+      ]
+    },
+    {
+      "bone_id": "tail",
+      "connected_bone_id": "spine",
+      "kind": "ball_socket",
+      "anchor": [
+        0,
+        0,
+        -0.3
+      ],
+      "connected_anchor": [
+        0,
+        0,
+        0
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "limits_enabled": true,
+      "limits_degrees": [
+        -60,
+        60
+      ]
+    }
+  ]
+}

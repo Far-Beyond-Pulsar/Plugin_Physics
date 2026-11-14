@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.7,
+  "restitution": 0.1,
+  "friction_combine": "average",
+  "restitution_combine": "average",
+  "density": 40.0,
+  "surface": "cloth",
+  "description": "Very light packing foam: density 40 kg/m3, so a 1 m cube is 40 kg and it floats on water. Soft, with a bit of grip."
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.02,
+  "restitution": 0.05,
+  "friction_combine": "min",
+  "restitution_combine": "average",
+  "density": 917.0,
+  "surface": "ice",
+  "description": "Nearly frictionless. The Min friction rule makes the contact slippery whatever it touches. A body slides until something stops it."
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.45,
+  "restitution": 0.25,
+  "friction_combine": "min",
+  "restitution_combine": "average",
+  "density": 7850.0,
+  "surface": "metal",
+  "description": "Smooth, heavy and slightly springy. Density 7850 kg/m3. The Minimum friction rule means a steel surface never grips harder than the other side."
+}

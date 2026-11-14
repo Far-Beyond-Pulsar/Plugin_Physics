@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.8,
+  "restitution": 0.1,
+  "friction_combine": "average",
+  "restitution_combine": "average",
+  "density": 1200.0,
+  "surface": "grass",
+  "description": "Soft outdoor ground. Dampens bounces a little and gives the foot good grip for characters."
+}

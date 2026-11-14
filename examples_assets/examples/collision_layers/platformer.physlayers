@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "layers": [
+    {
+      "name": "Default",
+      "collides_with": [
+        "Default",
+        "World",
+        "Player",
+        "Enemy",
+        "Projectile",
+        "Pickup",
+        "Trigger"
+      ],
+      "color": "#8a93a6",
+      "description": "Anything that was not given a layer; collides with everything."
+    },
+    {
+      "name": "World",
+      "collides_with": [
+        "Default",
+        "Player",
+        "Enemy",
+        "Projectile"
+      ],
+      "color": "#6a7280",
+      "description": "Static level geometry: floors, walls and platforms."
+    },
+    {
+      "name": "Player",
+      "collides_with": [
+        "Default",
+        "World",
+        "Enemy",
+        "Pickup",
+        "Trigger"
+      ],
+      "color": "#4ecdc4",
+      "description": "The player's character."
+    },
+    {
+      "name": "Enemy",
+      "collides_with": [
+        "Default",
+        "World",
+        "Player",
+        "Projectile"
+      ],
+      "color": "#e0566b",
+      "description": "Enemies. They collide with the world and the player, not with each other."
+    },
+    {
+      "name": "Projectile",
+      "collides_with": [
+        "Default",
+        "World",
+        "Enemy"
+      ],
+      "color": "#f4c542",
+      "description": "Bullets and thrown items: hit the world and enemies but pass through the player and other projectiles."
+    },
+    {
+      "name": "Pickup",
+      "collides_with": [
+        "Default",
+        "Player"
+      ],
+      "color": "#8bd450",
+      "description": "Coins and power-ups. Only the player touches them."
+    },
+    {
+      "name": "Trigger",
+      "collides_with": [
+        "Default",
+        "Player"
+      ],
+      "color": "#b48ead",
+      "description": "Invisible zones (checkpoints, kill planes) that only the player enters."
+    }
+  ],
+  "description": "A small side-scrolling game. Player and enemies share the world, but projectiles never hit their own side and pickups only react to the player."
+}

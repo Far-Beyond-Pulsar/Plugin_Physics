@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "friction": 0.4,
+  "restitution": 0.2,
+  "friction_combine": "average",
+  "restitution_combine": "average",
+  "density": 1.0,
+  "surface": "default",
+  "description": "The engine's defaults (friction 0.4, restitution 0.2, density 1). A new .physmat starts here, and so does a collider with no material."
+}
