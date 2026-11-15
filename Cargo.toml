@@ -21,6 +21,7 @@ editor = [
     "dep:ui",
     "dep:gpui-ce",
     "dep:plugin_editor_api",
+    "plugin_editor_api/editor",
     "pulsar_reflection/prims-gpui",
 ]
 
