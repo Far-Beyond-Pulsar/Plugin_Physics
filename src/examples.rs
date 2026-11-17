@@ -78,7 +78,12 @@ mod tests {
                 file.path
             );
             // Nothing the loader would drop.
-            assert!(material.extra.is_empty(), "{}: {:?}", file.path, material.extra);
+            assert!(
+                material.extra.is_empty(),
+                "{}: {:?}",
+                file.path,
+                material.extra
+            );
         }
     }
 
@@ -106,8 +111,8 @@ mod tests {
         let files = with_ext(".physlayers");
         assert!(files.len() >= 3);
         for file in files {
-            let (layers, notes) = CollisionLayers::parse(text(file))
-                .unwrap_or_else(|e| panic!("{}: {e}", file.path));
+            let (layers, notes) =
+                CollisionLayers::parse(text(file)).unwrap_or_else(|e| panic!("{}: {e}", file.path));
             assert!(notes.is_empty(), "{}: {notes:?}", file.path);
             let issues = layers.validate();
             assert!(

@@ -89,7 +89,7 @@ pub fn build_workspace<V: 'static>(
 
         let center = tabs(layout.center, window, cx);
         let area_for_split = area_weak.clone();
-        let mut dock_item = |dock: Dock, window: &mut Window, cx: &mut Context<Workspace>| {
+        let dock_item = |dock: Dock, window: &mut Window, cx: &mut Context<Workspace>| {
             let size = dock.size;
             let mut groups: Vec<DockItem> = dock
                 .groups
