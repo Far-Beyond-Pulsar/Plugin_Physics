@@ -48,18 +48,18 @@
 //! are recorded in the editor's profiler (a DLL build's `export_plugin!`
 //! shares the host profiler with this library when it loads).
 
+use editor_task_queue::{ServiceDescription, ServiceHandle, TaskContext, ThreadRole};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
-use editor_task_queue::{ServiceDescription, ServiceHandle, TaskContext, ThreadRole};
 use std::time::{Duration, Instant};
 
+use engine_backend::scene::class_spec::{ActorCx, SessionScope};
 use pulsar_events::EventHub;
 use pulsar_scenedb::{
     ChangeCursor, ChangeRead, ComponentChange, ComponentChangeKind, Entity, World,
 };
 use pulsar_world_registry::pulsar_scene_model::{ComponentOwner, Transform};
-use engine_backend::scene::class_spec::{ActorCx, SessionScope};
 use pulsar_world_registry::{ComponentRuntimeState, SystemContext};
 
 use crate::behavior::{behaviors, Output, Part, PhysEvent, Touched, WriteCtx};
@@ -151,11 +151,16 @@ impl PhysicsSession {
         let shared = Arc::new(Shared::default());
         let worker = Arc::clone(&shared);
         let thread = editor_task_queue::spawn_service(
-            ServiceDescription::new("Physics simulation", "physics", "Pulsar-Physics", ThreadRole::Service)
-                .owner("physics_plugin")
-                // Idle between frames with nothing to do; a busy step beats
-                // at least this often.
-                .heartbeat(Duration::from_secs(5)),
+            ServiceDescription::new(
+                "Physics simulation",
+                "physics",
+                "Pulsar-Physics",
+                ThreadRole::Service,
+            )
+            .owner("physics_plugin")
+            // Idle between frames with nothing to do; a busy step beats
+            // at least this often.
+            .heartbeat(Duration::from_secs(5)),
             move |ctx| simulation_thread(worker, ctx, gravity),
         )
         .map_err(|error| tracing::error!("could not start the physics thread: {error}"))
@@ -891,14 +896,20 @@ mod tests {
         let moon = fall(serde_json::json!({ "gravity": [0.0, -1.62, 0.0] }));
         let none = fall(serde_json::json!({ "gravity": [0.0, 0.0, 0.0] }));
         assert!(earth > 3.0, "default gravity: fell {earth}");
-        assert!(moon < earth * 0.4 && moon > 0.1, "weaker gravity: {moon} vs {earth}");
+        assert!(
+            moon < earth * 0.4 && moon > 0.1,
+            "weaker gravity: {moon} vs {earth}"
+        );
         assert!(none < 0.01, "no gravity: fell {none}");
     }
 
     #[test]
     fn physics_disabled_registers_nothing() {
         let mut world = World::new();
-        let (mut state, hub) = (level(serde_json::json!({ "physics_enabled": false })), EventHub::new());
+        let (mut state, hub) = (
+            level(serde_json::json!({ "physics_enabled": false })),
+            EventHub::new(),
+        );
         let owner = falling_box(&mut world, 10.0);
         run(&mut world, &mut state, &hub, 0.5);
         assert!(!simulation_running(&state));
@@ -910,7 +921,10 @@ mod tests {
     #[test]
     fn two_sessions_in_one_process_do_not_share_a_simulation() {
         let (mut world_a, mut world_b) = (World::new(), World::new());
-        let (mut a, mut b) = (ComponentRuntimeState::default(), ComponentRuntimeState::default());
+        let (mut a, mut b) = (
+            ComponentRuntimeState::default(),
+            ComponentRuntimeState::default(),
+        );
         let hub = EventHub::new();
         let owner_a = falling_box(&mut world_a, 50.0);
         run(&mut world_a, &mut a, &hub, 0.2);

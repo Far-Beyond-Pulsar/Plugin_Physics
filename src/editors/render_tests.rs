@@ -227,7 +227,9 @@ fn the_layers_editor_renders_and_every_edit_redraws_cleanly(cx: &mut TestAppCont
     // Grow the set, flip pairs, break a pairing, reorder, duplicate, remove.
     for name in ["Player", "Enemy", "Projectile", "Trigger"] {
         doc.update(cx, |d, cx| {
-            d.edit("Add layer", None, cx, |s| drop(s.add(Some(name))))
+            d.edit("Add layer", None, cx, |s| {
+                let _ = s.add(Some(name));
+            })
         });
         draw(cx);
     }
@@ -250,7 +252,9 @@ fn the_layers_editor_renders_and_every_edit_redraws_cleanly(cx: &mut TestAppCont
 
     doc.update(cx, |d, cx| d.edit("Move", None, cx, |s| s.move_layer(4, 0)));
     doc.update(cx, |d, cx| {
-        d.edit("Duplicate", None, cx, |s| drop(s.duplicate(2)))
+        d.edit("Duplicate", None, cx, |s| {
+            let _ = s.duplicate(2);
+        })
     });
     draw(cx);
     assert_eq!(len(&doc, cx), 6);
