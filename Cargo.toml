@@ -1,6 +1,6 @@
 [package]
 name = "physics_plugin"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Physics (`pulsar.physics`): the physics components, their Rapier simulation and the physics asset models; with `editor`, the asset editors. The plugin's root crate: `registrations` is the one place it registers what it contributes"
 
