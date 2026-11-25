@@ -188,6 +188,7 @@ impl Drop for PhysicsSession {
 fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext, gravity: [f32; 3]) {
     profiling::set_thread_name("Pulsar-Physics");
     let mut sim = Sim::with_gravity(gravity);
+    let mut cadence = crate::cadence::Cadence::new(Instant::now());
     loop {
         ctx.set_phase("Waiting for work");
         ctx.set_idle(true);
@@ -231,6 +232,15 @@ fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext, gravity: [f32; 3]) 
                 );
                 sim = Sim::with_gravity(gravity);
             }
+        }
+        if let Some(report) = cadence.record(started, started.elapsed()) {
+            tracing::info!(
+                target: "physics_plugin::cadence",
+                runs_per_second = report.runs,
+                longest_gap_ms = report.longest_gap.as_secs_f32() * 1000.0,
+                longest_run_ms = report.longest_run.as_secs_f32() * 1000.0,
+                "physics cadence"
+            );
         }
         ctx.tick(started.elapsed());
         *lock(&shared.processed) = handled;
@@ -401,12 +411,36 @@ fn read_moves(world: &World, streams: &mut Streams) -> (HashSet<Entity>, bool) {
                 let entity = change.entity;
                 let now = world.get::<Transform>(entity).copied();
                 if now.is_some() && streams.self_writes.get(&entity) != now.as_ref() {
+                    // A character's facing is gameplay's: turning it (the view, or the body
+                    // toward its walk, every frame) is not a move. Counting it as one fenced
+                    // the object, dropped the simulation's results for it as stale and sent
+                    // the capsule back to the position SceneDB still held, so walking or
+                    // falling stalled while the view turned.
+                    if let (Some(now), Some(before)) = (now, streams.self_writes.get(&entity).copied()) {
+                        if turned_character(world, entity, &before, &now) {
+                            streams.self_writes.insert(entity, now);
+                            continue;
+                        }
+                    }
                     moved.insert(entity);
                 }
             }
         }
     }
     (moved, rescan_all)
+}
+
+/// Whether `now` differs from `before` only in rotation and `entity` is a character
+/// controller's capsule, which the simulation never rotates.
+fn turned_character(world: &World, entity: Entity, before: &Transform, now: &Transform) -> bool {
+    use pulsar_world_registry::pulsar_scene_model::attachments;
+    before.position == now.position
+        && before.scale == now.scale
+        && attachments::instances(world, entity).iter().any(|instance| {
+            attachments::meta(world, *instance).is_some_and(|meta| {
+                meta.class_name == crate::components::CHARACTER_CONTROLLER_CLASS_NAME
+            })
+        })
 }
 
 fn apply(

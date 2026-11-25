@@ -21,6 +21,7 @@ use plugin_editor_api::*;
 
 pub mod assets;
 mod behavior;
+mod cadence;
 mod components;
 #[cfg(feature = "editor")]
 mod editors;
