@@ -189,8 +189,11 @@ fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext, gravity: [f32; 3]) 
     profiling::set_thread_name("Pulsar-Physics");
     let mut sim = Sim::with_gravity(gravity);
     let mut cadence = crate::cadence::Cadence::new(Instant::now());
+    // One phase for the task's life: a step runs ~100 times a second and a
+    // phase change is a task-log line, a lock and a UI wake-up each. Whether
+    // the thread waits or works is `set_idle`.
+    ctx.set_phase("Simulating");
     loop {
-        ctx.set_phase("Waiting for work");
         ctx.set_idle(true);
         let (parts, dt, handled) = {
             let mut inbox = lock(&shared.inbox);
@@ -214,7 +217,6 @@ fn simulation_thread(shared: Arc<Shared>, ctx: &TaskContext, gravity: [f32; 3]) 
         };
 
         ctx.set_idle(false);
-        ctx.set_phase("Stepping the Rapier world");
         let started = Instant::now();
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             profiling::profile_scope!("Physics::Frame");
