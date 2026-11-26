@@ -283,7 +283,10 @@ fn after_steps(sim: &mut Sim, seconds: f32, out: &mut Output) {
                 &dispatcher,
                 &sim.bodies,
                 &sim.colliders,
-                QueryFilter::default().exclude_rigid_body(handle),
+                // Triggers are walked through, not into.
+                QueryFilter::default()
+                    .exclude_rigid_body(handle)
+                    .exclude_sensors(),
             );
             let movement =
                 cfg.controller()

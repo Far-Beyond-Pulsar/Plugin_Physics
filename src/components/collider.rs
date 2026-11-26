@@ -278,9 +278,20 @@ impl ColliderComponent {
                 return None;
             }
         };
+        // A trigger also hears kinematic things (a character's capsule)
+        // when it is itself fixed or kinematic: Rapier skips those pairs by
+        // default, as there is no contact to solve, but entering is an event.
+        let collision_types = if self.is_trigger {
+            ActiveCollisionTypes::default()
+                | ActiveCollisionTypes::KINEMATIC_FIXED
+                | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+        } else {
+            ActiveCollisionTypes::default()
+        };
         Some(
             builder
                 .sensor(self.is_trigger)
+                .active_collision_types(collision_types)
                 .active_events(ActiveEvents::COLLISION_EVENTS),
         )
     }

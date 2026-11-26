@@ -827,6 +827,62 @@ mod tests {
         );
     }
 
+    /// A pickup: a trigger with no body, walked into by a character. The
+    /// character is kinematic and the trigger fixed, a pair Rapier skips
+    /// unless the sensor asks for it; and the walk must not be blocked.
+    #[test]
+    fn a_character_walks_through_a_pickup_trigger_and_is_reported() {
+        let mut world = World::new();
+        let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
+        let _ = physics_events::register_all(&hub);
+        slab(&mut world);
+
+        let pickup = object(&mut world, [3.0, 1.4, 0.0]);
+        let mut sensor = ColliderComponent::default();
+        sensor.shape = crate::components::ColliderShape::Sphere;
+        sensor.radius = 0.6;
+        sensor.is_trigger = true;
+        let collider = attach(&mut world, pickup, sensor);
+
+        let hero = object(&mut world, [0.0, 1.5, 0.0]);
+        let mut walker = CharacterControllerComponent::default();
+        walker.desired_velocity = [2.0, 0.0, 0.0];
+        attach(&mut world, hero, walker);
+
+        let heard = |name: String| {
+            let id = hub.descriptor_by_name(&name).unwrap().id;
+            let log = Arc::new(Mutex::new(Vec::new()));
+            let sink = Arc::clone(&log);
+            let sub = hub.bus().subscribe_dyn(
+                id,
+                SubscribeOptions::channel(Channel::Entity(pickup.bits())),
+                move |event| sink.lock().unwrap().push(event.fields[2].clone()),
+            );
+            (log, sub)
+        };
+        let (entered, _enter) = heard(crate::components::TRIGGER_ENTER.qualified_name());
+        let (exited, _exit) = heard(crate::components::TRIGGER_EXIT.qualified_name());
+        // A Blueprint's "On Component" node listens on the component's own
+        // channel, not the object's.
+        let by_component = Arc::new(Mutex::new(0));
+        let sink = Arc::clone(&by_component);
+        let _component = hub.bus().subscribe_dyn(
+            hub.descriptor_by_name(&crate::components::TRIGGER_ENTER.qualified_name())
+                .unwrap()
+                .id,
+            SubscribeOptions::channel(Channel::Entity(collider.bits())),
+            move |_| *sink.lock().unwrap() += 1,
+        );
+        run(&mut world, &mut state, &hub, 3.0);
+
+        let t = world.get::<Transform>(hero).unwrap().position;
+        assert!(t[0] > 4.5, "walked through the trigger: {t:?}");
+        let visitor = [DynValue::U64(hero.bits())];
+        assert_eq!(entered.lock().unwrap().as_slice(), visitor);
+        assert_eq!(exited.lock().unwrap().as_slice(), visitor);
+        assert_eq!(*by_component.lock().unwrap(), 1, "heard on the component's channel");
+    }
+
     #[test]
     fn a_joint_keeps_a_body_attached_to_the_world() {
         let mut world = World::new();

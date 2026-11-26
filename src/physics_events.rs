@@ -118,20 +118,24 @@ pub fn register_all(hub: &EventHub) -> EventIds {
     ids
 }
 
-/// Queue `event` on its object's entity channel.
+/// Queue `event` on its object's entity channel and, for a component instance
+/// of its own, on that instance's channel: a script hears either through its
+/// object (`Self` scope) or through a component reference ("On Component").
 pub fn publish(hub: &EventHub, ids: &EventIds, event: &PhysEvent) {
     let Some(&id) = ids.get(&event.spec) else {
         return;
     };
-    let fields = vec![
-        DynValue::U64(event.owner.bits()),
-        DynValue::U64(event.component.bits()),
-        DynValue::U64(event.other.map_or(0, |e| e.bits())),
-    ];
-    if let Err(error) = hub.publish_dyn(
-        Channel::Entity(event.owner.bits()),
-        DynEvent::new(id, fields),
-    ) {
-        tracing::warn!(event = %event.spec.qualified_name(), %error, "physics event was refused");
+    let component = (event.component != event.owner).then_some(event.component);
+    for channel in std::iter::once(event.owner).chain(component) {
+        let fields = vec![
+            DynValue::U64(event.owner.bits()),
+            DynValue::U64(event.component.bits()),
+            DynValue::U64(event.other.map_or(0, |e| e.bits())),
+        ];
+        if let Err(error) =
+            hub.publish_dyn(Channel::Entity(channel.bits()), DynEvent::new(id, fields))
+        {
+            tracing::warn!(event = %event.spec.qualified_name(), %error, "physics event was refused");
+        }
     }
 }
