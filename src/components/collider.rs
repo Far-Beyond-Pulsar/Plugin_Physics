@@ -6,6 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use engine_class_derive::{engine_class, world_component};
 use pulsar_reflection::Reflectable;
@@ -13,10 +14,21 @@ use pulsar_scenedb::{component_id, Entity, World};
 use rapier3d::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::behavior::{read_rows, Output, Part, PhysEvent, PhysicsBehavior, Row, Rows, Touched};
+use crate::behavior::{read_rows_with, Output, Part, PhysEvent, PhysicsBehavior, Row, Rows, Touched};
+use crate::components::collider_geometry::{self, Geometry};
 use crate::declare_events;
-use crate::math::{pose, simulated};
+use crate::math::{pose, quat_from_euler_degrees, simulated, vector};
 use crate::sim::{ColliderInfo, Sim};
+
+pulsar_world_registry::asset_path_type! {
+    /// The mesh a convex hull or triangle mesh collider is made from.
+    pub CollisionMeshPath, empty = "No mesh", extensions = ["mesh"]
+}
+
+pulsar_world_registry::asset_path_type! {
+    /// A `.physmat` physics material.
+    pub PhysicsMaterialPath, empty = "Engine defaults", extensions = ["physmat"]
+}
 
 /// The class name scripts and level files use.
 pub const COLLIDER_CLASS_NAME: &str = "ColliderComponent";
@@ -105,15 +117,17 @@ pub struct ColliderComponent {
     pub height: f32,
     #[property(category = "Shape")]
     pub axis: ColliderAxis,
-    /// Convex hull and triangle mesh: project-relative path of the mesh.
+    /// Convex hull and triangle mesh: leave empty to use the geometry the
+    /// object shows, with everything under it in the hierarchy. (A mesh named
+    /// by path is not simulated yet.)
     #[property(category = "Shape")]
-    pub mesh: String,
+    pub mesh: CollisionMeshPath,
     /// Reports overlaps instead of blocking.
     #[property(category = "Filtering")]
     pub is_trigger: bool,
     /// Project-relative path of a `.physmat` asset. Empty: engine defaults.
     #[property(category = "Filtering")]
-    pub physics_material: String,
+    pub physics_material: PhysicsMaterialPath,
     /// Name of a layer in the project's `.physlayers` asset.
     #[property(category = "Filtering")]
     pub layer: String,
@@ -129,9 +143,9 @@ impl Default for ColliderComponent {
             radius: 0.5,
             height: 1.0,
             axis: ColliderAxis::Y,
-            mesh: String::new(),
+            mesh: CollisionMeshPath::default(),
             is_trigger: false,
-            physics_material: String::new(),
+            physics_material: PhysicsMaterialPath::default(),
             layer: "Default".into(),
         }
     }
@@ -163,10 +177,10 @@ impl ColliderComponent {
                 axis,
             },
             ColliderShape::ConvexHull => ColliderShapeData::ConvexHull {
-                mesh: self.mesh.clone(),
+                mesh: self.mesh.0.clone(),
             },
             ColliderShape::TriangleMesh => ColliderShapeData::TriangleMesh {
-                mesh: self.mesh.clone(),
+                mesh: self.mesh.0.clone(),
             },
         }
     }
@@ -257,8 +271,18 @@ impl ColliderComponent {
         pose(self.center, rotation)
     }
 
-    /// `None` for shapes that need a mesh asset; those are not simulated yet.
-    fn builder(&self) -> Option<ColliderBuilder> {
+    /// Whether the shape is made from the geometry of the object itself.
+    fn uses_own_geometry(&self) -> bool {
+        matches!(
+            self.shape,
+            ColliderShape::ConvexHull | ColliderShape::TriangleMesh
+        ) && self.mesh.is_empty()
+    }
+
+    /// `geometry` is the object's own, for a shape that
+    /// [uses it](Self::uses_own_geometry). `None` when there is nothing to
+    /// simulate.
+    fn builder(&self, geometry: Option<&Geometry>) -> Option<ColliderBuilder> {
         let builder = match self.shape() {
             ColliderShapeData::Box {
                 half_extents: [x, y, z],
@@ -273,9 +297,42 @@ impl ColliderComponent {
             ColliderShapeData::Cone { radius, height, .. } => {
                 ColliderBuilder::cone(height * 0.5, radius)
             }
-            ColliderShapeData::ConvexHull { .. } | ColliderShapeData::TriangleMesh { .. } => {
-                tracing::warn!("mesh colliders are not simulated yet; skipping");
+            ColliderShapeData::ConvexHull { mesh } | ColliderShapeData::TriangleMesh { mesh }
+                if !mesh.is_empty() =>
+            {
+                tracing::warn!(
+                    "collider mesh `{mesh}`: a mesh named by path is not simulated yet; \
+                     clear it to use the object's own geometry"
+                );
                 return None;
+            }
+            ColliderShapeData::ConvexHull { .. } => {
+                let points: Vec<_> = geometry?.vertices.iter().map(|&v| vector(v)).collect();
+                let Some(hull) = ColliderBuilder::convex_hull(&points) else {
+                    tracing::warn!("convex hull collider: the geometry encloses no volume");
+                    return None;
+                };
+                hull
+            }
+            ColliderShapeData::TriangleMesh { .. } => {
+                let geometry = geometry?;
+                let vertices = geometry.vertices.iter().map(|&v| vector(v)).collect();
+                let started = std::time::Instant::now();
+                match ColliderBuilder::trimesh(vertices, geometry.triangles.clone()) {
+                    Ok(mesh) => {
+                        tracing::info!(
+                            target: "physics_plugin::collider",
+                            triangles = geometry.triangles.len(),
+                            milliseconds = started.elapsed().as_millis() as u64,
+                            "triangle mesh collider built"
+                        );
+                        mesh
+                    }
+                    Err(error) => {
+                        tracing::warn!("triangle mesh collider: {error}");
+                        return None;
+                    }
+                }
             }
         };
         // A trigger also hears kinematic things (a character's capsule)
@@ -315,8 +372,71 @@ struct State {
     colliders: HashMap<Entity, Tracked>,
 }
 
+/// Whether any enabled collider is made from its object's own geometry.
+pub fn any_uses_own_geometry(world: &World) -> bool {
+    world
+        .query::<&ColliderComponent>()
+        .any(|(_, collider)| collider.enabled && collider.uses_own_geometry())
+}
+
+/// What the simulation is told about one collider.
+#[derive(Clone)]
+struct Input {
+    cfg: ColliderComponent,
+    /// The object's own geometry, when the shape uses it and the row was
+    /// read because the collider itself changed.
+    geometry: Option<Arc<Geometry>>,
+}
+
 fn read(world: &mut World, touched: &Touched) -> Option<Part> {
-    read_rows::<ColliderComponent>(world, touched, |c| c.enabled).map(|rows| Box::new(rows) as Part)
+    let mut rows = read_rows_with(
+        world,
+        touched,
+        component_id::<ColliderComponent>(),
+        |world, instance| {
+            let cfg = world.get::<ColliderComponent>(instance)?;
+            cfg.enabled.then(|| Input {
+                cfg: cfg.clone(),
+                geometry: None,
+            })
+        },
+    )?;
+    // Gathering reads every triangle under the object, so only for a collider
+    // that is new or edited: a moved one keeps the shape it has.
+    let changed: HashSet<Entity> = touched.changed.iter().copied().collect();
+    let owners: HashMap<Entity, glam::DMat4> = rows
+        .upsert
+        .iter()
+        .filter(|row| row.cfg.cfg.uses_own_geometry())
+        .filter(|row| rows.replace || changed.contains(&row.instance))
+        .map(|row| {
+            // The inverse of the pose the simulation places the collider with.
+            let [x, y, z, w] = quat_from_euler_degrees(row.transform.rotation).map(f64::from);
+            let placed = glam::DMat4::from_rotation_translation(
+                glam::DQuat::from_xyzw(x, y, z, w).normalize(),
+                glam::DVec3::from_array(row.transform.position),
+            );
+            (row.owner, placed.inverse())
+        })
+        .collect();
+    if !owners.is_empty() {
+        profiling::profile_scope!("Physics::ColliderGeometry");
+        let mut gathered: HashMap<Entity, Arc<Geometry>> = collider_geometry::gather(world, &owners)
+            .into_iter()
+            .map(|(owner, geometry)| (owner, Arc::new(geometry)))
+            .collect();
+        for row in &mut rows.upsert {
+            if owners.contains_key(&row.owner) && row.cfg.cfg.uses_own_geometry() {
+                row.cfg.geometry = gathered.remove(&row.owner);
+                if row.cfg.geometry.is_none() {
+                    tracing::warn!(
+                        "mesh collider: the object and the objects under it show no geometry"
+                    );
+                }
+            }
+        }
+    }
+    Some(Box::new(rows) as Part)
 }
 
 fn forget(state: &mut State, sim: &mut Sim, instance: Entity) {
@@ -338,7 +458,7 @@ fn place(sim: &mut Sim, t: &Tracked) {
 }
 
 fn apply(sim: &mut Sim, part: Part) {
-    let Ok(rows) = part.downcast::<Rows<ColliderComponent>>() else {
+    let Ok(rows) = part.downcast::<Rows<Input>>() else {
         return;
     };
     sim.with_state::<State, _>(|state, sim| {
@@ -363,9 +483,10 @@ fn apply(sim: &mut Sim, part: Part) {
     });
 }
 
-fn upsert(state: &mut State, sim: &mut Sim, row: Row<ColliderComponent>) {
+fn upsert(state: &mut State, sim: &mut Sim, row: Row<Input>) {
+    let Input { cfg, geometry } = &row.cfg;
     let parent = sim.owner_body.get(&row.owner).copied();
-    let signature = row.cfg.signature();
+    let signature = cfg.signature();
     let owner_pose = pose(simulated(row.transform.position), row.transform.rotation);
     if let Some(t) = state.colliders.get_mut(&row.instance) {
         if t.signature == signature {
@@ -377,10 +498,10 @@ fn upsert(state: &mut State, sim: &mut Sim, row: Row<ColliderComponent>) {
         }
         forget(state, sim, row.instance);
     }
-    let Some(builder) = row.cfg.builder() else {
+    let Some(builder) = cfg.builder(geometry.as_deref()) else {
         return;
     };
-    let local = row.cfg.local_pose();
+    let local = cfg.local_pose();
     let handle = match parent {
         Some(body) => {
             sim.colliders
@@ -395,7 +516,7 @@ fn upsert(state: &mut State, sim: &mut Sim, row: Row<ColliderComponent>) {
         ColliderInfo {
             instance: row.instance,
             owner: row.owner,
-            sensor: row.cfg.is_trigger,
+            sensor: cfg.is_trigger,
         },
     );
     state.colliders.insert(

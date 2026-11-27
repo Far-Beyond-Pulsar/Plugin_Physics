@@ -1,4 +1,5 @@
 use crate::assets::material::{DEFAULT_FRICTION, DEFAULT_RESTITUTION};
+use crate::components::collider::PhysicsMaterialPath;
 use engine_class_derive::engine_class;
 use serde_json::Value;
 
@@ -6,7 +7,7 @@ use serde_json::Value;
 #[category("Physics Material", category_color = "#4ECDC4")]
 pub struct MaterialPhysicsProps {
     #[property(category = "Physics Material")]
-    pub physics_material: String,
+    pub physics_material: PhysicsMaterialPath,
     #[property(category = "Physics Material")]
     pub override_physics_material: bool,
     #[property(min = 0.0, max = 2.0, step = 0.01, category = "Physics Material")]
@@ -22,7 +23,7 @@ pub struct MaterialPhysicsProps {
 impl Default for MaterialPhysicsProps {
     fn default() -> Self {
         Self {
-            physics_material: String::new(),
+            physics_material: PhysicsMaterialPath::default(),
             override_physics_material: false,
             friction: DEFAULT_FRICTION,
             restitution: DEFAULT_RESTITUTION,
@@ -35,7 +36,7 @@ impl Default for MaterialPhysicsProps {
 impl MaterialPhysicsProps {
     pub(crate) fn apply_from_component_data(&mut self, obj: &serde_json::Map<String, Value>) {
         if let Some(v) = obj.get("physics_material").and_then(|v| v.as_str()) {
-            self.physics_material = v.to_string();
+            self.physics_material = v.into();
         }
         if let Some(v) = obj
             .get("override_physics_material")

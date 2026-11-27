@@ -28,10 +28,22 @@
           "type": "f32"
         },
         {
+          "name": "mass",
+          "display_name": "Mass",
+          "category": "Movement",
+          "type": "f32"
+        },
+        {
           "name": "push_dynamic_bodies",
           "display_name": "Push Dynamic Bodies",
           "category": "Movement",
           "type": "bool"
+        },
+        {
+          "name": "push_force",
+          "display_name": "Push Force",
+          "category": "Movement",
+          "type": "f32"
         },
         {
           "name": "radius",
@@ -116,11 +128,33 @@
           }
         },
         {
+          "name": "get_mass",
+          "display_name": "Get Mass",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
           "name": "get_push_dynamic_bodies",
           "display_name": "Get Push_dynamic_bodies",
           "category": "Movement",
           "params": [],
           "return_type": "bool",
+          "flags": {
+            "side_effect_free": true,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "get_push_force",
+          "display_name": "Get Push_force",
+          "category": "Movement",
+          "params": [],
+          "return_type": "f32",
           "flags": {
             "side_effect_free": true,
             "deterministic": false
@@ -257,6 +291,22 @@
           }
         },
         {
+          "name": "set_mass",
+          "display_name": "Set Mass",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
           "name": "set_push_dynamic_bodies",
           "display_name": "Set Push_dynamic_bodies",
           "category": "Movement",
@@ -264,6 +314,22 @@
             {
               "name": "value",
               "type": "bool"
+            }
+          ],
+          "return_type": null,
+          "flags": {
+            "side_effect_free": false,
+            "deterministic": false
+          }
+        },
+        {
+          "name": "set_push_force",
+          "display_name": "Set Push_force",
+          "category": "Movement",
+          "params": [
+            {
+              "name": "value",
+              "type": "f32"
             }
           ],
           "return_type": null,
@@ -419,13 +485,13 @@
           "name": "mesh",
           "display_name": "Mesh",
           "category": "Shape",
-          "type": "String"
+          "type": "CollisionMeshPath"
         },
         {
           "name": "physics_material",
           "display_name": "Physics Material",
           "category": "Filtering",
-          "type": "String"
+          "type": "PhysicsMaterialPath"
         },
         {
           "name": "radius",
@@ -523,7 +589,7 @@
           "display_name": "Get Mesh",
           "category": "Shape",
           "params": [],
-          "return_type": "String",
+          "return_type": "CollisionMeshPath",
           "flags": {
             "side_effect_free": true,
             "deterministic": false
@@ -534,7 +600,7 @@
           "display_name": "Get Physics_material",
           "category": "Filtering",
           "params": [],
-          "return_type": "String",
+          "return_type": "PhysicsMaterialPath",
           "flags": {
             "side_effect_free": true,
             "deterministic": false
@@ -681,7 +747,7 @@
           "params": [
             {
               "name": "value",
-              "type": "String"
+              "type": "CollisionMeshPath"
             }
           ],
           "return_type": null,
@@ -697,7 +763,7 @@
           "params": [
             {
               "name": "value",
-              "type": "String"
+              "type": "PhysicsMaterialPath"
             }
           ],
           "return_type": null,
@@ -1571,7 +1637,7 @@
           "name": "physics_material",
           "display_name": "Physics Material",
           "category": "Physics Material",
-          "type": "String"
+          "type": "PhysicsMaterialPath"
         },
         {
           "name": "restitution",

@@ -23,6 +23,7 @@ editor = [
     "dep:ui_level_editor",
     "dep:ui",
     "dep:gpui-ce",
+    "dep:ui_common",
     "dep:plugin_editor_api",
     "plugin_editor_api/editor",
     "pulsar_reflection/prims-gpui",
@@ -39,6 +40,8 @@ plugin_manager = { workspace = true, optional = true }
 # without the editor.
 gpui-ce = { workspace = true, optional = true }
 ui = { workspace = true, optional = true }
+# The shared asset path picker of the collider's paths (with `editor`).
+ui_common = { workspace = true, optional = true }
 plugin_editor_api = { workspace = true, optional = true }
 engine_class_derive = { workspace = true }
 # The skeletal rig finds a mesh's physics asset through the project's file

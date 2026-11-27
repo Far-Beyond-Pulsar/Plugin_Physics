@@ -4,7 +4,9 @@ use std::collections::{HashMap, HashSet};
 
 use engine_class_derive::{engine_class, world_component};
 use pulsar_scenedb::{component_id, Entity, World};
-use rapier3d::control::{CharacterAutostep, CharacterLength, KinematicCharacterController};
+use rapier3d::control::{
+    CharacterAutostep, CharacterCollision, CharacterLength, KinematicCharacterController,
+};
 use rapier3d::parry::query::DefaultQueryDispatcher;
 use rapier3d::pipeline::QueryFilter;
 use rapier3d::prelude::*;
@@ -47,6 +49,15 @@ pub struct CharacterControllerComponent {
     /// Pushes dynamic bodies it walks into.
     #[property(category = "Movement")]
     pub push_dynamic_bodies: bool,
+    /// Kilograms the controller pushes with: a body much lighter than this
+    /// takes the character's speed, a heavier one shares it.
+    #[property(min = 0.0, max = 100000.0, step = 1.0, category = "Movement")]
+    pub mass: f32,
+    /// The most force, in newtons, it pushes a body with. A body whose
+    /// friction holds more than this does not move, and one that does move
+    /// gains speed by its mass, so a heavy crate is slow to get going.
+    #[property(min = 0.0, max = 1000000.0, step = 10.0, category = "Movement")]
+    pub push_force: f32,
     /// Where the controller should move, in metres per second (horizontal
     /// walking; scripts write it every frame). Gravity and jumping act on
     /// `vertical_velocity`, not here.
@@ -73,6 +84,8 @@ impl Default for CharacterControllerComponent {
             snap_to_ground: 0.2,
             gravity_scale: 1.0,
             push_dynamic_bodies: true,
+            mass: 80.0,
+            push_force: 600.0,
             desired_velocity: [0.0; 3],
             vertical_velocity: 0.0,
             grounded: false,
@@ -115,7 +128,8 @@ impl CharacterControllerComponent {
             autostep: (self.step_height > 0.0).then(|| CharacterAutostep {
                 max_height: CharacterLength::Absolute(self.step_height),
                 min_width: CharacterLength::Absolute((self.radius * 0.5).max(0.01)),
-                include_dynamic_bodies: self.push_dynamic_bodies,
+                // A body it pushes is not climbed onto.
+                include_dynamic_bodies: !self.push_dynamic_bodies,
             }),
             max_slope_climb_angle: self.slope_limit_degrees.to_radians(),
             min_slope_slide_angle: self.slope_limit_degrees.to_radians(),
@@ -134,10 +148,14 @@ struct Tracked {
     cfg: CharacterControllerComponent,
     signature: (u32, u32),
     /// Vertical speed the simulation carries between runs. A component
-    /// holding a different value than the last one written was set by a
-    /// script (a jump) and wins.
+    /// value that is neither the last one the simulation reported nor the
+    /// one it last held was set by a script (a jump) and wins.
     vertical: f32,
+    /// The speed the simulation last reported.
     vertical_token: f32,
+    /// The speed the component held when last read. When the simulation
+    /// runs late the component still holds it, which is no script's write.
+    vertical_seen: f32,
     grounded: bool,
 }
 
@@ -195,10 +213,12 @@ fn apply(sim: &mut Sim, part: Part) {
                             );
                         }
                     }
-                    if row.cfg.vertical_velocity != t.vertical_token {
-                        t.vertical = row.cfg.vertical_velocity;
-                        t.vertical_token = row.cfg.vertical_velocity;
+                    let held = row.cfg.vertical_velocity;
+                    if held != t.vertical_token && held != t.vertical_seen {
+                        t.vertical = held;
+                        t.vertical_token = held;
                     }
+                    t.vertical_seen = held;
                     t.cfg = row.cfg;
                     continue;
                 }
@@ -238,12 +258,77 @@ fn apply(sim: &mut Sim, part: Part) {
                     signature,
                     vertical: row.cfg.vertical_velocity,
                     vertical_token: row.cfg.vertical_velocity,
+                    vertical_seen: row.cfg.vertical_velocity,
                     grounded: row.cfg.grounded,
                     cfg: row.cfg,
                 },
             );
         }
     });
+}
+
+/// Push the dynamic bodies a controller walked into this run.
+///
+/// Rapier's own push tops a body up to the character's speed on every run,
+/// whatever its mass, so a crate of half a tonne moves like a ball. Here each
+/// body gets the impulse that would bring it to the character's walking speed
+/// (shared by the two masses), but never more than `push_force` over the
+/// run: friction and mass then decide how far it goes. The push is
+/// horizontal, at the character's side, so a box can tip and a ball rolls.
+fn push(sim: &mut Sim, cfg: &CharacterControllerComponent, hits: &[CharacterCollision], seconds: f32) {
+    if cfg.mass <= 0.0 || cfg.push_force <= 0.0 || seconds <= 0.0 {
+        return;
+    }
+    let walk = Vector::new(cfg.desired_velocity[0], 0.0, cfg.desired_velocity[2]);
+    let mut pushed: HashSet<RigidBodyHandle> = HashSet::new();
+    for hit in hits {
+        let Some(collider) = sim.colliders.get(hit.handle) else {
+            continue;
+        };
+        let Some(parent) = collider.parent() else {
+            continue;
+        };
+        let bounds = collider.compute_aabb();
+        let Some(body) = sim.bodies.get_mut(parent) else {
+            continue;
+        };
+        // Once per body, the first contact (a slide reports it again).
+        if !body.is_dynamic() || !pushed.insert(parent) {
+            continue;
+        }
+        // The hit's normal is the obstacle's, facing the character; the push
+        // runs the other way.
+        let normal = -Vector::new(hit.hit.normal1.x, 0.0, hit.hit.normal1.z);
+        // Standing on it, or touching it from above: no push.
+        if normal.length() < 0.3 {
+            continue;
+        }
+        let normal = normal.normalize();
+        let speed = walk.dot(normal);
+        if speed <= 0.0 {
+            continue;
+        }
+        // At the character's side, at its height clamped to the body's, half
+        // way to the body's centre of mass: enough leverage to tip a box
+        // without spinning a ball in place.
+        let centre = hit.character_pos.translation;
+        let side = centre + normal * cfg.radius.max(0.01);
+        let mass_centre = body.center_of_mass();
+        let height = centre.y.clamp(bounds.mins.y, bounds.maxs.y);
+        let point = Vector::new(side.x, mass_centre.y + 0.5 * (height - mass_centre.y), side.z);
+        let shortfall = speed - body.velocity_at_point(point).dot(normal);
+        if shortfall <= 0.0 {
+            continue;
+        }
+        let body_mass = body.mass();
+        let shared = if body_mass > 0.0 {
+            body_mass * cfg.mass / (body_mass + cfg.mass)
+        } else {
+            cfg.mass
+        };
+        let impulse = (shortfall * shared).min(cfg.push_force * seconds);
+        body.apply_impulse_at_point(normal * impulse, point, true);
+    }
 }
 
 /// One controller's results.
@@ -288,9 +373,17 @@ fn after_steps(sim: &mut Sim, seconds: f32, out: &mut Output) {
                     .exclude_rigid_body(handle)
                     .exclude_sensors(),
             );
+            let controller = cfg.controller();
+            let mut hits = Vec::new();
             let movement =
-                cfg.controller()
-                    .move_shape(seconds, &queries, &shape, &position, desired, |_| {});
+                controller.move_shape(seconds, &queries, &shape, &position, desired, |hit| {
+                    hits.push(hit)
+                });
+            // What it walked into takes the push (the move above only stops
+            // at it), applied before the next step.
+            if cfg.push_dynamic_bodies {
+                push(sim, cfg, &hits, seconds);
+            }
             let new_position = array(position.translation + movement.translation);
             // Landing or hitting a ceiling stops vertical motion.
             if (movement.grounded && t.vertical < 0.0)
@@ -367,5 +460,50 @@ inventory::submit! {
         before_step: None,
         after_steps: Some(after_steps),
         write_back: Some(write_back),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::behavior::Row;
+
+    fn row(instance: Entity, owner: Entity, vertical_velocity: f32) -> Part {
+        Box::new(Rows {
+            replace: false,
+            upsert: vec![Row {
+                instance,
+                owner,
+                transform: Default::default(),
+                moved: false,
+                cfg: CharacterControllerComponent {
+                    vertical_velocity,
+                    ..Default::default()
+                },
+            }],
+            remove: Vec::new(),
+        })
+    }
+
+    /// The component lags the simulation by a run (the thread was late): the
+    /// old speed it still holds must not replace the newer one, while a speed
+    /// a script writes must.
+    #[test]
+    fn a_late_run_keeps_gravity_and_a_jump_still_applies() {
+        let mut world = World::new();
+        let (instance, owner) = (world.spawn(), world.spawn());
+        let mut sim = Sim::with_gravity([0.0, -10.0, 0.0]);
+        let speed = |sim: &mut Sim| {
+            sim.with_state::<State, _>(|state, _| state.controllers[&instance].vertical)
+        };
+        apply(&mut sim, row(instance, owner, 0.0));
+        after_steps(&mut sim, 0.1, &mut Output::default());
+        // Nothing came back yet: the component is rewritten, still at 0.
+        apply(&mut sim, row(instance, owner, 0.0));
+        after_steps(&mut sim, 0.1, &mut Output::default());
+        assert!((speed(&mut sim) + 2.0).abs() < 1e-4, "{}", speed(&mut sim));
+        // A script jumps.
+        apply(&mut sim, row(instance, owner, 5.0));
+        assert_eq!(speed(&mut sim), 5.0);
     }
 }

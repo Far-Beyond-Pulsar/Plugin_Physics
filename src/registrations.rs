@@ -85,6 +85,14 @@ pub(crate) fn build(p: &mut pulsar_plugins::PluginBuilder) {
         .class::<legacy::PhysicsComponent>(ClassSpec::default())
         .class::<legacy::RigidbodyComponent>(ClassSpec::default());
 
+    // A level switch ends the level's simulation; the next one starts with
+    // the new level's gravity.
+    p.add(engine_backend::scene::game_hooks::LevelEndRegistration {
+        origin: p.origin(),
+        name: "physics.level",
+        level_ended: crate::runtime::level_ended,
+    });
+
     // ── Scene rows ──────────────────────────────────────────────────────────
 
     // Bodies that push simulated water: each `PhysicsComponent` on the

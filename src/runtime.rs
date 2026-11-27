@@ -66,6 +66,10 @@ use crate::behavior::{behaviors, Output, Part, PhysEvent, Touched, WriteCtx};
 use crate::physics_events::{self, EventIds};
 use crate::sim::Sim;
 
+/// How long the simulation waits, at most, for the assets a mesh collider is
+/// made from.
+const MAX_GEOMETRY_WAIT_SECONDS: f32 = 30.0;
+
 /// Events kept for a frame the game thread has not collected yet.
 const MAX_PENDING_EVENTS: usize = 10_000;
 
@@ -144,6 +148,8 @@ pub(crate) struct PhysicsSession {
     streams: Streams,
     /// The hub the physics events are registered on, and their ids there.
     events: Option<(EventHub, EventIds)>,
+    /// How long the first read has waited for a mesh collider's geometry.
+    geometry_wait: f32,
 }
 
 impl PhysicsSession {
@@ -171,6 +177,7 @@ impl PhysicsSession {
             members: HashSet::new(),
             streams: Streams::default(),
             events: None,
+            geometry_wait: 0.0,
         }
     }
 }
@@ -304,11 +311,42 @@ pub(crate) fn begin(cx: &mut ActorCx<'_>, instance: Entity) {
     if !physics_enabled(scope) {
         return;
     }
+    session_of(scope).members.insert(instance);
+}
+
+/// The session's simulation, started with the level's gravity if there is
+/// none; it takes over the components a level switch carried over.
+fn session_of(scope: &mut SessionScope) -> &mut PhysicsSession {
     let gravity = gravity_of(scope);
-    scope
-        .get_or_insert_with(|| PhysicsSession::spawn(gravity))
-        .members
-        .insert(instance);
+    let carried = if scope.resource::<PhysicsSession>().is_none() {
+        scope.remove_resource::<CarriedMembers>()
+    } else {
+        None
+    };
+    let session = scope.get_or_insert_with(|| PhysicsSession::spawn(gravity));
+    if let Some(CarriedMembers(members)) = carried {
+        session.members.extend(members);
+    }
+    session
+}
+
+/// Components that outlived a level (the game instance's): they join the next
+/// level's simulation.
+struct CarriedMembers(HashSet<Entity>);
+
+/// The game left a level for another one: the simulation, built with that
+/// level's gravity and read of its objects, ends (its thread is joined). The
+/// next level's starts afresh, so it waits for its own mesh collider geometry
+/// again; components that persist join it.
+pub(crate) fn level_ended(_world: &mut World, scope: &mut SessionScope) {
+    let Some(mut session) = scope.remove_resource::<PhysicsSession>() else {
+        return;
+    };
+    let members = std::mem::take(&mut session.members);
+    drop(session);
+    if !members.is_empty() {
+        scope.insert_resource(CarriedMembers(members));
+    }
 }
 
 /// A physics component ended play: forget it. The last one stops the
@@ -319,6 +357,9 @@ pub(crate) fn end(cx: &mut ActorCx<'_>) {
         return;
     };
     let scope = cx.session();
+    if let Some(carried) = scope.resource_mut::<CarriedMembers>() {
+        carried.0.remove(&instance);
+    }
     let Some(session) = scope.resource_mut::<PhysicsSession>() else {
         return;
     };
@@ -341,9 +382,18 @@ pub(crate) fn run(ctx: &mut SystemContext<'_>) {
     let world: &mut World = &mut *ctx.world;
     let events: &EventHub = ctx.events;
     let delta_seconds = ctx.delta_seconds;
-    let Some(session) = ctx.runtime.scope_mut().resource_mut::<PhysicsSession>() else {
+    let scope = ctx.runtime.scope_mut();
+    // Carried over a level switch with no new physics component to start the
+    // simulation for them.
+    if scope.resource::<CarriedMembers>().is_some() && physics_enabled(scope) {
+        session_of(scope);
+    }
+    let Some(session) = scope.resource_mut::<PhysicsSession>() else {
         return;
     };
+    if holds_for_geometry(world, session, delta_seconds) {
+        return;
+    }
     if !session
         .events
         .as_ref()
@@ -378,6 +428,29 @@ pub(crate) fn run(ctx: &mut SystemContext<'_>) {
     for owner in &moved {
         streams.fences.insert(*owner, seq);
     }
+}
+
+/// Whether the simulation must not start yet: a mesh collider is made from the
+/// geometry its object shows, which a level may still be loading when play
+/// begins. Starting then would build a floor with holes and drop everything
+/// through them, so nothing is simulated until the assets are in.
+fn holds_for_geometry(world: &World, session: &mut PhysicsSession, seconds: f32) -> bool {
+    // Only before the first read: it is the one that gathers a level's colliders.
+    if session.streams.opened
+        || !world.asset_work_pending()
+        || !crate::components::any_collider_uses_own_geometry(world)
+    {
+        return false;
+    }
+    session.geometry_wait += seconds;
+    if session.geometry_wait < MAX_GEOMETRY_WAIT_SECONDS {
+        return true;
+    }
+    tracing::warn!(
+        "physics starts after {MAX_GEOMETRY_WAIT_SECONDS} s with assets still loading: a mesh \
+         collider may be missing geometry"
+    );
+    false
 }
 
 // ---------------------------------------------------------------------------
@@ -901,6 +974,51 @@ mod tests {
         assert!(t[1] > 7.0, "held by the joint: {t:?}");
     }
 
+    /// A prop: a dynamic body of the given shape and mass, resting on the slab.
+    fn prop(world: &mut World, x: f64, shape: crate::components::ColliderShape, mass: f32) -> Entity {
+        let e = object(world, [x, 1.0, 0.0]);
+        let mut collider = ColliderComponent::default();
+        collider.shape = shape;
+        attach(world, e, collider);
+        let mut body = RigidBodyComponent::default();
+        body.mass = mass;
+        attach(world, e, body);
+        e
+    }
+
+    /// Walking into dynamic props pushes them; a light ball is shoved
+    /// further than a heavy crate, and the character is held back by
+    /// neither for good.
+    #[test]
+    fn a_character_pushes_dynamic_props_by_their_mass() {
+        let walk = |shape: crate::components::ColliderShape, mass: f32| {
+            let mut world = World::new();
+            let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
+            slab(&mut world);
+            let thing = prop(&mut world, 2.0, shape, mass);
+            // Let it settle on the slab first.
+            run(&mut world, &mut state, &hub, 1.0);
+            let rest = world.get::<Transform>(thing).unwrap().position;
+            assert!((0.9..1.1).contains(&rest[1]), "rests on the slab: {rest:?}");
+
+            let hero = object(&mut world, [0.0, 1.5, 0.0]);
+            let mut walker = CharacterControllerComponent::default();
+            walker.desired_velocity = [3.0, 0.0, 0.0];
+            attach(&mut world, hero, walker);
+            run(&mut world, &mut state, &hub, 2.0);
+            let moved = world.get::<Transform>(thing).unwrap().position[0] - rest[0];
+            let hero_x = world.get::<Transform>(hero).unwrap().position[0];
+            (moved, hero_x)
+        };
+        let (ball, hero_ball) = walk(crate::components::ColliderShape::Sphere, 2.0);
+        let (light_crate, _) = walk(crate::components::ColliderShape::Box, 20.0);
+        let (crate_, _) = walk(crate::components::ColliderShape::Box, 500.0);
+        assert!(ball > 1.5, "the ball was pushed away: {ball}");
+        assert!(hero_ball > 2.0, "the character kept walking: {hero_ball}");
+        assert!(light_crate > 1.0, "a light crate slides: {light_crate}");
+        assert!(crate_ < ball * 0.5, "a heavy crate moves less: {crate_} vs {ball}");
+    }
+
     #[test]
     fn a_character_controller_walks_and_lands() {
         let mut world = World::new();
@@ -975,6 +1093,57 @@ mod tests {
         owner
     }
 
+    /// A test kind's content: a 20 m floor quad on objects carrying it.
+    #[derive(Clone, Copy)]
+    struct TestFloor;
+
+    inventory::submit! {
+        engine_backend::subsystems::render::helio_renderer::ContentGeometryRegistration {
+            origin: pulsar_plugins::engine_origin!(),
+            name: "physics.test_floor",
+            local_bounds: |_, _| None,
+            hit: |_, _, _, _| None,
+            triangles: |world, visit| {
+                for (object, _) in world.query::<&TestFloor>() {
+                    let at = |x: f32, z: f32| glam::Vec3::new(x, 0.0, z);
+                    for triangle in [
+                        [at(-10.0, -10.0), at(-10.0, 10.0), at(10.0, 10.0)],
+                        [at(-10.0, -10.0), at(10.0, 10.0), at(10.0, -10.0)],
+                    ] {
+                        if !visit(object, triangle) {
+                            return;
+                        }
+                    }
+                }
+            },
+        }
+    }
+
+    #[test]
+    fn a_mesh_collider_collides_with_the_geometry_under_its_object() {
+        use pulsar_world_registry::pulsar_scene_model::components::Parent;
+        let mut world = World::new();
+        let (mut state, hub) = (ComponentRuntimeState::default(), EventHub::new());
+        // The collider is on a folder; the floor is a child 0.5 m above it,
+        // so the ground the character finds must be at the child's height.
+        let folder = object(&mut world, [0.0, 1.0, 0.0]);
+        let floor = object(&mut world, [0.0, 0.5, 0.0]);
+        world.insert(floor, Parent(folder));
+        world.insert(floor, TestFloor);
+        let mut collider = ColliderComponent::default();
+        collider.shape = crate::components::ColliderShape::TriangleMesh;
+        attach(&mut world, folder, collider);
+
+        let walker = object(&mut world, [1.0, 4.0, 1.0]);
+        let controller = attach(&mut world, walker, CharacterControllerComponent::default());
+        run(&mut world, &mut state, &hub, 2.0);
+
+        // The floor is at 1.5; the capsule is 1.8 m tall around its centre.
+        let height = y(&world, walker);
+        assert!((height - 2.4).abs() < 0.1, "stands on the floor: {height}");
+        assert!(world.get::<CharacterControllerComponent>(controller).unwrap().grounded);
+    }
+
     #[test]
     fn the_levels_gravity_changes_the_motion() {
         let fall = |settings: serde_json::Value| {
@@ -993,6 +1162,38 @@ mod tests {
             "weaker gravity: {moon} vs {earth}"
         );
         assert!(none < 0.01, "no gravity: fell {none}");
+    }
+
+    /// A level switch restarts the simulation with the next level's gravity;
+    /// a body that persists joins it.
+    #[test]
+    fn a_level_switch_restarts_the_simulation_with_the_new_gravity() {
+        let mut world = World::new();
+        let (mut state, hub) = (level(serde_json::json!({})), EventHub::new());
+        let kept = falling_box(&mut world, 100.0);
+        run(&mut world, &mut state, &hub, 0.3);
+        assert!(simulation_running(&state));
+
+        state.set_settings(serde_json::Value::Null);
+        level_ended(&mut world, state.scope_mut());
+        assert!(!simulation_running(&state), "the old simulation is gone");
+
+        state.set_settings(serde_json::json!({ "gravity": [0.0, 0.0, 0.0] }));
+        run(&mut world, &mut state, &hub, 0.2);
+        assert!(simulation_running(&state), "the kept body is simulated again");
+        assert_eq!(simulated_counts(&state), (1, 1));
+        // The body keeps its velocity; without gravity it no longer speeds up.
+        let mut travelled = || {
+            let before = y(&world, kept);
+            run(&mut world, &mut state, &hub, 0.25);
+            y(&world, kept) - before
+        };
+        let (first, second) = (travelled(), travelled());
+        assert!(first < -0.1, "it keeps falling at its speed: {first}");
+        assert!(
+            (second - first).abs() < 0.1,
+            "no gravity in the new level: {first} then {second}"
+        );
     }
 
     #[test]

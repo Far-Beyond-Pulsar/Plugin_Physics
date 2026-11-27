@@ -7,6 +7,7 @@
 
 mod character_controller;
 mod collider;
+mod collider_geometry;
 mod force_field;
 mod joint;
 pub mod legacy;
@@ -16,6 +17,7 @@ mod skeletal_rig;
 pub use character_controller::{
     CharacterControllerComponent, AIRBORNE, CHARACTER_CONTROLLER_CLASS_NAME, GROUNDED,
 };
+pub(crate) use collider::any_uses_own_geometry as any_collider_uses_own_geometry;
 pub use collider::{
     ColliderAxis, ColliderComponent, ColliderShape, ColliderShapeData, COLLIDER_CLASS_NAME,
     COLLISION_ENTER, COLLISION_EXIT, TRIGGER_ENTER, TRIGGER_EXIT,
